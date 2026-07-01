@@ -1,0 +1,197 @@
+@MyProject_HostAddress = http://localhost:5294
+
+### Dev login stub — exchange an email for a JWT. Seeded users below.
+### alice=initiator, bob=Engineering manager (stage 1), carol=Dept Head (stage 2),
+### dan=HR (stage 3), admin=WorkflowAdmin.
+
+# @name loginAlice
+POST {{MyProject_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "alice@example.com" }
+
+###
+@alice = {{loginAlice.response.body.token}}
+
+# @name loginBob
+POST {{MyProject_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "bob@example.com" }
+
+###
+@bob = {{loginBob.response.body.token}}
+
+# @name loginCarol
+POST {{MyProject_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "carol@example.com" }
+
+###
+@carol = {{loginCarol.response.body.token}}
+
+# @name loginDan
+POST {{MyProject_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "dan@example.com" }
+
+###
+@dan = {{loginDan.response.body.token}}
+
+# @name loginAdmin
+POST {{MyProject_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "admin@example.com" }
+
+###
+@admin = {{loginAdmin.response.body.token}}
+
+### Who am I (diagnostic — shows claims + role mapping)
+GET {{MyProject_HostAddress}}/api/auth/whoami
+Authorization: Bearer {{admin}}
+
+### ---------------------------------------------------------------------------
+### HAPPY PATH: create -> submit -> approve x3 -> Approved
+### ---------------------------------------------------------------------------
+
+# @name createLeave
+POST {{MyProject_HostAddress}}/api/leave-requests
+Authorization: Bearer {{alice}}
+Content-Type: application/json
+
+{ "fromDate": "2026-08-01", "toDate": "2026-08-05", "reason": "Summer vacation" }
+
+###
+@leaveId = {{createLeave.response.body.id}}
+
+# @name submitLeave
+POST {{MyProject_HostAddress}}/api/leave-requests/{{leaveId}}/submit
+Authorization: Bearer {{alice}}
+
+###
+@instanceId = {{submitLeave.response.body.id}}
+
+### Document is now locked (isLocked=true) once the outbox dispatcher runs
+GET {{MyProject_HostAddress}}/api/leave-requests/{{leaveId}}
+Authorization: Bearer {{alice}}
+
+### Alice is NOT the stage-1 approver -> 403
+POST {{MyProject_HostAddress}}/api/approvals/{{instanceId}}/approve
+Authorization: Bearer {{alice}}
+Content-Type: application/json
+
+{ }
+
+### Stage 1 (Manager = Engineering dept manager Bob) approves -> advances to Department Head
+POST {{MyProject_HostAddress}}/api/approvals/{{instanceId}}/approve
+Authorization: Bearer {{bob}}
+Content-Type: application/json
+
+{ "comment": "Approved by manager" }
+
+### Stage 2 (Department Head role = Carol) approves -> advances to HR Approval
+POST {{MyProject_HostAddress}}/api/approvals/{{instanceId}}/approve
+Authorization: Bearer {{carol}}
+Content-Type: application/json
+
+{ }
+
+### Stage 3 (HR user = Dan) approves -> Approved (terminal)
+POST {{MyProject_HostAddress}}/api/approvals/{{instanceId}}/approve
+Authorization: Bearer {{dan}}
+Content-Type: application/json
+
+{ }
+
+### Full immutable audit trail
+GET {{MyProject_HostAddress}}/api/approvals/{{instanceId}}/history
+Authorization: Bearer {{alice}}
+
+### ---------------------------------------------------------------------------
+### REJECT -> EDIT -> RESUBMIT (new cycle, history preserved)
+### ---------------------------------------------------------------------------
+
+# @name createLeave2
+POST {{MyProject_HostAddress}}/api/leave-requests
+Authorization: Bearer {{alice}}
+Content-Type: application/json
+
+{ "fromDate": "2026-09-01", "toDate": "2026-09-03", "reason": "Conference" }
+
+###
+@leaveId2 = {{createLeave2.response.body.id}}
+
+# @name submitLeave2
+POST {{MyProject_HostAddress}}/api/leave-requests/{{leaveId2}}/submit
+Authorization: Bearer {{alice}}
+
+###
+@instanceId2 = {{submitLeave2.response.body.id}}
+
+### Reject at stage 1 (comment required)
+POST {{MyProject_HostAddress}}/api/approvals/{{instanceId2}}/reject
+Authorization: Bearer {{bob}}
+Content-Type: application/json
+
+{ "comment": "Dates clash with the release; please reschedule." }
+
+### Owner edits the rejected document (allowed while Rejected)
+PUT {{MyProject_HostAddress}}/api/leave-requests/{{leaveId2}}
+Authorization: Bearer {{alice}}
+Content-Type: application/json
+
+{ "fromDate": "2026-09-15", "toDate": "2026-09-17", "reason": "Conference (rescheduled)" }
+
+### Resubmit -> new cycle 2, back to stage 1, prior history preserved
+POST {{MyProject_HostAddress}}/api/approvals/{{instanceId2}}/resubmit
+Authorization: Bearer {{alice}}
+
+### History now shows cycle 1 (submit/reject) AND cycle 2 (resubmit)
+GET {{MyProject_HostAddress}}/api/approvals/{{instanceId2}}/history
+Authorization: Bearer {{alice}}
+
+### ---------------------------------------------------------------------------
+### DASHBOARDS
+### ---------------------------------------------------------------------------
+
+### Bob's approval queue ("waiting on me")
+GET {{MyProject_HostAddress}}/api/dashboard/my-pending
+Authorization: Bearer {{bob}}
+
+### Alice's documents
+GET {{MyProject_HostAddress}}/api/dashboard/my-documents
+Authorization: Bearer {{alice}}
+
+### SLA breaches (current pending stages past their SLA)
+GET {{MyProject_HostAddress}}/api/dashboard/sla-breaches
+Authorization: Bearer {{admin}}
+
+### Per-workflow metrics
+GET {{MyProject_HostAddress}}/api/dashboard/workflows/1/metrics
+Authorization: Bearer {{admin}}
+
+### ---------------------------------------------------------------------------
+### ADMIN: workflow configuration (WorkflowAdmin role required)
+### ---------------------------------------------------------------------------
+
+### List document types
+GET {{MyProject_HostAddress}}/api/document-types
+Authorization: Bearer {{admin}}
+
+### List workflows (with stages)
+GET {{MyProject_HostAddress}}/api/workflows
+Authorization: Bearer {{admin}}
+
+### Reorder stages of workflow 1 (example: reverse to 3,2,1)
+PUT {{MyProject_HostAddress}}/api/workflows/1/stages/reorder
+Authorization: Bearer {{admin}}
+Content-Type: application/json
+
+{ "orderedStageIds": [3, 2, 1] }
+
+### Non-admin hitting an admin endpoint -> 403
+GET {{MyProject_HostAddress}}/api/workflows
+Authorization: Bearer {{alice}}

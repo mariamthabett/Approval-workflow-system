@@ -1,0 +1,1319 @@
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (59ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      PRAGMA journal_mode = 'wal';
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE "ApprovalInstances" (
+          "Id" INTEGER NOT NULL CONSTRAINT "PK_ApprovalInstances" PRIMARY KEY AUTOINCREMENT,
+          "DocumentTypeId" INTEGER NOT NULL,
+          "DocumentId" TEXT NOT NULL,
+          "WorkflowId" INTEGER NOT NULL,
+          "WorkflowVersion" INTEGER NOT NULL,
+          "Status" INTEGER NOT NULL,
+          "CycleNumber" INTEGER NOT NULL,
+          "CurrentStageOrder" INTEGER NULL,
+          "InitiatorEmployeeId" INTEGER NOT NULL,
+          "CreatedAtUtc" TEXT NOT NULL,
+          "CompletedAtUtc" TEXT NULL
+      );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE "DocumentTypes" (
+          "Id" INTEGER NOT NULL CONSTRAINT "PK_DocumentTypes" PRIMARY KEY AUTOINCREMENT,
+          "Code" TEXT NOT NULL,
+          "Name" TEXT NOT NULL,
+          "IsActive" INTEGER NOT NULL
+      );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE "LeaveRequests" (
+          "Id" INTEGER NOT NULL CONSTRAINT "PK_LeaveRequests" PRIMARY KEY AUTOINCREMENT,
+          "OwnerEmployeeId" INTEGER NOT NULL,
+          "FromDate" TEXT NOT NULL,
+          "ToDate" TEXT NOT NULL,
+          "Reason" TEXT NOT NULL,
+          "Status" INTEGER NOT NULL,
+          "IsLocked" INTEGER NOT NULL,
+          "CreatedAtUtc" TEXT NOT NULL
+      );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE "Notifications" (
+          "Id" INTEGER NOT NULL CONSTRAINT "PK_Notifications" PRIMARY KEY AUTOINCREMENT,
+          "RecipientEmployeeId" INTEGER NOT NULL,
+          "ApprovalInstanceId" INTEGER NULL,
+          "Title" TEXT NOT NULL,
+          "Body" TEXT NOT NULL,
+          "IsRead" INTEGER NOT NULL,
+          "CreatedAtUtc" TEXT NOT NULL
+      );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE "OutboxMessages" (
+          "Id" INTEGER NOT NULL CONSTRAINT "PK_OutboxMessages" PRIMARY KEY AUTOINCREMENT,
+          "ApprovalInstanceId" INTEGER NULL,
+          "EventType" TEXT NOT NULL,
+          "PayloadJson" TEXT NOT NULL,
+          "OccurredAtUtc" TEXT NOT NULL,
+          "ProcessedAtUtc" TEXT NULL,
+          "Attempts" INTEGER NOT NULL,
+          "Error" TEXT NULL
+      );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE "Roles" (
+          "Id" INTEGER NOT NULL CONSTRAINT "PK_Roles" PRIMARY KEY AUTOINCREMENT,
+          "Code" TEXT NOT NULL,
+          "Name" TEXT NOT NULL
+      );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE "ApprovalActions" (
+          "Id" INTEGER NOT NULL CONSTRAINT "PK_ApprovalActions" PRIMARY KEY AUTOINCREMENT,
+          "ApprovalInstanceId" INTEGER NOT NULL,
+          "StageInstanceId" INTEGER NULL,
+          "CycleNumber" INTEGER NOT NULL,
+          "ActionType" INTEGER NOT NULL,
+          "ActedByEmployeeId" INTEGER NOT NULL,
+          "Comment" TEXT NULL,
+          "FromStatus" INTEGER NULL,
+          "ToStatus" INTEGER NULL,
+          "CreatedAtUtc" TEXT NOT NULL,
+          CONSTRAINT "FK_ApprovalActions_ApprovalInstances_ApprovalInstanceId" FOREIGN KEY ("ApprovalInstanceId") REFERENCES "ApprovalInstances" ("Id") ON DELETE CASCADE
+      );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE "StageInstances" (
+          "Id" INTEGER NOT NULL CONSTRAINT "PK_StageInstances" PRIMARY KEY AUTOINCREMENT,
+          "ApprovalInstanceId" INTEGER NOT NULL,
+          "WorkflowStageId" INTEGER NULL,
+          "CycleNumber" INTEGER NOT NULL,
+          "StageOrder" INTEGER NOT NULL,
+          "Name" TEXT NOT NULL,
+          "ApproverType" INTEGER NOT NULL,
+          "ResolvedApproverEmployeeId" INTEGER NULL,
+          "ApproverRoleId" INTEGER NULL,
+          "ApproverDepartmentId" INTEGER NULL,
+          "Status" INTEGER NOT NULL,
+          "ActedByEmployeeId" INTEGER NULL,
+          "ActedAtUtc" TEXT NULL,
+          "EnteredAtUtc" TEXT NOT NULL,
+          "SlaHours" INTEGER NULL,
+          CONSTRAINT "CK_StageInstance_Approver" CHECK (([ApproverType] = 1 AND [ApproverRoleId] IS NOT NULL) OR ([ApproverType] = 2 AND [ApproverDepartmentId] IS NOT NULL) OR ([ApproverType] = 3 AND [ResolvedApproverEmployeeId] IS NOT NULL)),
+          CONSTRAINT "FK_StageInstances_ApprovalInstances_ApprovalInstanceId" FOREIGN KEY ("ApprovalInstanceId") REFERENCES "ApprovalInstances" ("Id") ON DELETE CASCADE
+      );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE "Workflows" (
+          "Id" INTEGER NOT NULL CONSTRAINT "PK_Workflows" PRIMARY KEY AUTOINCREMENT,
+          "DocumentTypeId" INTEGER NOT NULL,
+          "Name" TEXT NOT NULL,
+          "Version" INTEGER NOT NULL,
+          "IsActive" INTEGER NOT NULL,
+          "CreatedByEmployeeId" INTEGER NOT NULL,
+          "CreatedAtUtc" TEXT NOT NULL,
+          CONSTRAINT "FK_Workflows_DocumentTypes_DocumentTypeId" FOREIGN KEY ("DocumentTypeId") REFERENCES "DocumentTypes" ("Id") ON DELETE RESTRICT
+      );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE "WorkflowStages" (
+          "Id" INTEGER NOT NULL CONSTRAINT "PK_WorkflowStages" PRIMARY KEY AUTOINCREMENT,
+          "WorkflowId" INTEGER NOT NULL,
+          "StageOrder" INTEGER NOT NULL,
+          "Name" TEXT NOT NULL,
+          "ApproverType" INTEGER NOT NULL,
+          "ApproverRoleId" INTEGER NULL,
+          "ApproverDepartmentId" INTEGER NULL,
+          "ApproverEmployeeId" INTEGER NULL,
+          "SlaHours" INTEGER NULL,
+          "IsActive" INTEGER NOT NULL,
+          CONSTRAINT "CK_WorkflowStage_Approver" CHECK (([ApproverType] = 1 AND [ApproverRoleId] IS NOT NULL AND [ApproverDepartmentId] IS NULL AND [ApproverEmployeeId] IS NULL) OR ([ApproverType] = 2 AND [ApproverDepartmentId] IS NOT NULL AND [ApproverRoleId] IS NULL AND [ApproverEmployeeId] IS NULL) OR ([ApproverType] = 3 AND [ApproverEmployeeId] IS NOT NULL AND [ApproverRoleId] IS NULL AND [ApproverDepartmentId] IS NULL)),
+          CONSTRAINT "FK_WorkflowStages_Workflows_WorkflowId" FOREIGN KEY ("WorkflowId") REFERENCES "Workflows" ("Id") ON DELETE CASCADE
+      );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE "Departments" (
+          "Id" INTEGER NOT NULL CONSTRAINT "PK_Departments" PRIMARY KEY AUTOINCREMENT,
+          "Name" TEXT NOT NULL,
+          "ManagerEmployeeId" INTEGER NULL,
+          "ParentDepartmentId" INTEGER NULL,
+          CONSTRAINT "FK_Departments_Departments_ParentDepartmentId" FOREIGN KEY ("ParentDepartmentId") REFERENCES "Departments" ("Id") ON DELETE RESTRICT,
+          CONSTRAINT "FK_Departments_Employees_ManagerEmployeeId" FOREIGN KEY ("ManagerEmployeeId") REFERENCES "Employees" ("Id") ON DELETE RESTRICT
+      );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE "Employees" (
+          "Id" INTEGER NOT NULL CONSTRAINT "PK_Employees" PRIMARY KEY AUTOINCREMENT,
+          "FullName" TEXT NOT NULL,
+          "Email" TEXT NOT NULL,
+          "DepartmentId" INTEGER NOT NULL,
+          "IsActive" INTEGER NOT NULL,
+          CONSTRAINT "FK_Employees_Departments_DepartmentId" FOREIGN KEY ("DepartmentId") REFERENCES "Departments" ("Id") ON DELETE RESTRICT
+      );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE "EmployeeRoles" (
+          "EmployeeId" INTEGER NOT NULL,
+          "RoleId" INTEGER NOT NULL,
+          CONSTRAINT "PK_EmployeeRoles" PRIMARY KEY ("EmployeeId", "RoleId"),
+          CONSTRAINT "FK_EmployeeRoles_Employees_EmployeeId" FOREIGN KEY ("EmployeeId") REFERENCES "Employees" ("Id") ON DELETE CASCADE,
+          CONSTRAINT "FK_EmployeeRoles_Roles_RoleId" FOREIGN KEY ("RoleId") REFERENCES "Roles" ("Id") ON DELETE RESTRICT
+      );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE INDEX "IX_ApprovalActions_ApprovalInstanceId_CreatedAtUtc" ON "ApprovalActions" ("ApprovalInstanceId", "CreatedAtUtc");
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE UNIQUE INDEX "IX_ApprovalInstances_DocumentTypeId_DocumentId" ON "ApprovalInstances" ("DocumentTypeId", "DocumentId");
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE INDEX "IX_ApprovalInstances_InitiatorEmployeeId_Status" ON "ApprovalInstances" ("InitiatorEmployeeId", "Status");
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE INDEX "IX_Departments_ManagerEmployeeId" ON "Departments" ("ManagerEmployeeId");
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE INDEX "IX_Departments_ParentDepartmentId" ON "Departments" ("ParentDepartmentId");
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE UNIQUE INDEX "IX_DocumentTypes_Code" ON "DocumentTypes" ("Code");
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE INDEX "IX_EmployeeRoles_RoleId" ON "EmployeeRoles" ("RoleId");
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE INDEX "IX_Employees_DepartmentId" ON "Employees" ("DepartmentId");
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE UNIQUE INDEX "IX_Employees_Email" ON "Employees" ("Email");
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE INDEX "IX_LeaveRequests_OwnerEmployeeId" ON "LeaveRequests" ("OwnerEmployeeId");
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE INDEX "IX_Notifications_RecipientEmployeeId_IsRead" ON "Notifications" ("RecipientEmployeeId", "IsRead");
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE INDEX "IX_OutboxMessages_ProcessedAtUtc" ON "OutboxMessages" ("ProcessedAtUtc");
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE UNIQUE INDEX "IX_Roles_Code" ON "Roles" ("Code");
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE INDEX "IX_StageInstances_ApprovalInstanceId_Status" ON "StageInstances" ("ApprovalInstanceId", "Status");
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE UNIQUE INDEX "IX_Workflows_DocumentTypeId_Version" ON "Workflows" ("DocumentTypeId", "Version");
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE UNIQUE INDEX "UX_Workflow_ActivePerDocumentType" ON "Workflows" ("DocumentTypeId") WHERE "IsActive" = 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE INDEX "IX_WorkflowStages_WorkflowId_StageOrder" ON "WorkflowStages" ("WorkflowId", "StageOrder");
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT EXISTS (
+          SELECT 1
+          FROM "Employees" AS "e")
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Int32), @p1='?' (Size = 11), @p2='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Departments" ("ManagerEmployeeId", "Name", "ParentDepartmentId")
+      VALUES (@p0, @p1, @p2)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int32), @p1='?' (Size = 15), @p2='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Departments" ("ManagerEmployeeId", "Name", "ParentDepartmentId")
+      VALUES (@p0, @p1, @p2)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8), @p1='?' (Size = 8)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Roles" ("Code", "Name")
+      VALUES (@p0, @p1)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 7), @p1='?' (Size = 7)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Roles" ("Code", "Name")
+      VALUES (@p0, @p1)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 8), @p1='?' (Size = 15)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Roles" ("Code", "Name")
+      VALUES (@p0, @p1)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 2), @p1='?' (Size = 10)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Roles" ("Code", "Name")
+      VALUES (@p0, @p1)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 13), @p1='?' (Size = 22)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Roles" ("Code", "Name")
+      VALUES (@p0, @p1)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?' (DbType = Int32), @p1='?' (Size = 17), @p2='?' (Size = 14), @p3='?' (DbType = Boolean)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Employees" ("DepartmentId", "Email", "FullName", "IsActive")
+      VALUES (@p0, @p1, @p2, @p3)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int32), @p1='?' (Size = 15), @p2='?' (Size = 11), @p3='?' (DbType = Boolean)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Employees" ("DepartmentId", "Email", "FullName", "IsActive")
+      VALUES (@p0, @p1, @p2, @p3)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int32), @p1='?' (Size = 17), @p2='?' (Size = 14), @p3='?' (DbType = Boolean)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Employees" ("DepartmentId", "Email", "FullName", "IsActive")
+      VALUES (@p0, @p1, @p2, @p3)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int32), @p1='?' (Size = 15), @p2='?' (Size = 6), @p3='?' (DbType = Boolean)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Employees" ("DepartmentId", "Email", "FullName", "IsActive")
+      VALUES (@p0, @p1, @p2, @p3)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int32), @p1='?' (Size = 17), @p2='?' (Size = 10), @p3='?' (DbType = Boolean)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Employees" ("DepartmentId", "Email", "FullName", "IsActive")
+      VALUES (@p0, @p1, @p2, @p3)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int32), @p0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      UPDATE "Departments" SET "ManagerEmployeeId" = @p0
+      WHERE "Id" = @p1
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int32), @p1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "EmployeeRoles" ("EmployeeId", "RoleId")
+      VALUES (@p0, @p1);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int32), @p1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "EmployeeRoles" ("EmployeeId", "RoleId")
+      VALUES (@p0, @p1);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int32), @p1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "EmployeeRoles" ("EmployeeId", "RoleId")
+      VALUES (@p0, @p1);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int32), @p1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "EmployeeRoles" ("EmployeeId", "RoleId")
+      VALUES (@p0, @p1);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int32), @p1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "EmployeeRoles" ("EmployeeId", "RoleId")
+      VALUES (@p0, @p1);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 12), @p1='?' (DbType = Boolean), @p2='?' (Size = 13)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "DocumentTypes" ("Code", "IsActive", "Name")
+      VALUES (@p0, @p1, @p2)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?' (DbType = DateTime), @p1='?' (DbType = Int32), @p2='?' (DbType = Int32), @p3='?' (DbType = Boolean), @p4='?' (Size = 23), @p5='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Workflows" ("CreatedAtUtc", "CreatedByEmployeeId", "DocumentTypeId", "IsActive", "Name", "Version")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p6='?' (DbType = Int32), @p7='?' (DbType = Int32), @p8='?' (DbType = Int32), @p9='?' (DbType = Int32), @p10='?' (DbType = Boolean), @p11='?' (Size = 16), @p12='?' (DbType = Int32), @p13='?' (DbType = Int32), @p14='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "WorkflowStages" ("ApproverDepartmentId", "ApproverEmployeeId", "ApproverRoleId", "ApproverType", "IsActive", "Name", "SlaHours", "StageOrder", "WorkflowId")
+      VALUES (@p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int32), @p1='?' (DbType = Int32), @p2='?' (DbType = Int32), @p3='?' (DbType = Int32), @p4='?' (DbType = Boolean), @p5='?' (Size = 15), @p6='?' (DbType = Int32), @p7='?' (DbType = Int32), @p8='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "WorkflowStages" ("ApproverDepartmentId", "ApproverEmployeeId", "ApproverRoleId", "ApproverType", "IsActive", "Name", "SlaHours", "StageOrder", "WorkflowId")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int32), @p1='?' (DbType = Int32), @p2='?' (DbType = Int32), @p3='?' (DbType = Int32), @p4='?' (DbType = Boolean), @p5='?' (Size = 11), @p6='?' (DbType = Int32), @p7='?' (DbType = Int32), @p8='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "WorkflowStages" ("ApproverDepartmentId", "ApproverEmployeeId", "ApproverRoleId", "ApproverType", "IsActive", "Name", "SlaHours", "StageOrder", "WorkflowId")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int32), @p0='?' (DbType = Boolean)], CommandType='Text', CommandTimeout='30']
+      UPDATE "Workflows" SET "IsActive" = @p0
+      WHERE "Id" = @p1
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:5294
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\Users\PC\Desktop\Approval workflow system\MyProject\bin\Debug\net10.0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+warn: Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware[3]
+      Failed to determine the https port for redirect.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@req_Email='?' (Size = 17)], CommandType='Text', CommandTimeout='30']
+      SELECT "e"."Id", "e"."DepartmentId", "e"."Email", "e"."FullName", "e"."IsActive"
+      FROM "Employees" AS "e"
+      WHERE "e"."Email" = @req_Email AND "e"."IsActive"
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@employee_Id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "r"."Code"
+      FROM "EmployeeRoles" AS "e"
+      INNER JOIN "Roles" AS "r" ON "e"."RoleId" = "r"."Id"
+      WHERE "e"."EmployeeId" = @employee_Id
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@req_Email='?' (Size = 15)], CommandType='Text', CommandTimeout='30']
+      SELECT "e"."Id", "e"."DepartmentId", "e"."Email", "e"."FullName", "e"."IsActive"
+      FROM "Employees" AS "e"
+      WHERE "e"."Email" = @req_Email AND "e"."IsActive"
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@employee_Id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "r"."Code"
+      FROM "EmployeeRoles" AS "e"
+      INNER JOIN "Roles" AS "r" ON "e"."RoleId" = "r"."Id"
+      WHERE "e"."EmployeeId" = @employee_Id
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@req_Email='?' (Size = 17)], CommandType='Text', CommandTimeout='30']
+      SELECT "e"."Id", "e"."DepartmentId", "e"."Email", "e"."FullName", "e"."IsActive"
+      FROM "Employees" AS "e"
+      WHERE "e"."Email" = @req_Email AND "e"."IsActive"
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@employee_Id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "r"."Code"
+      FROM "EmployeeRoles" AS "e"
+      INNER JOIN "Roles" AS "r" ON "e"."RoleId" = "r"."Id"
+      WHERE "e"."EmployeeId" = @employee_Id
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@req_Email='?' (Size = 15)], CommandType='Text', CommandTimeout='30']
+      SELECT "e"."Id", "e"."DepartmentId", "e"."Email", "e"."FullName", "e"."IsActive"
+      FROM "Employees" AS "e"
+      WHERE "e"."Email" = @req_Email AND "e"."IsActive"
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@employee_Id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "r"."Code"
+      FROM "EmployeeRoles" AS "e"
+      INNER JOIN "Roles" AS "r" ON "e"."RoleId" = "r"."Id"
+      WHERE "e"."EmployeeId" = @employee_Id
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@req_Email='?' (Size = 17)], CommandType='Text', CommandTimeout='30']
+      SELECT "e"."Id", "e"."DepartmentId", "e"."Email", "e"."FullName", "e"."IsActive"
+      FROM "Employees" AS "e"
+      WHERE "e"."Email" = @req_Email AND "e"."IsActive"
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@employee_Id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "r"."Code"
+      FROM "EmployeeRoles" AS "e"
+      INNER JOIN "Roles" AS "r" ON "e"."RoleId" = "r"."Id"
+      WHERE "e"."EmployeeId" = @employee_Id
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = DateTime), @p1='?' (DbType = Date), @p2='?' (DbType = Boolean), @p3='?' (DbType = Int32), @p4='?' (Size = 8), @p5='?' (DbType = Int32), @p6='?' (DbType = Date)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "LeaveRequests" ("CreatedAtUtc", "FromDate", "IsLocked", "OwnerEmployeeId", "Reason", "Status", "ToDate")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "l"."Id", "l"."CreatedAtUtc", "l"."FromDate", "l"."IsLocked", "l"."OwnerEmployeeId", "l"."Reason", "l"."Status", "l"."ToDate"
+      FROM "LeaveRequests" AS "l"
+      WHERE "l"."Id" = @id
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@code='?' (Size = 12)], CommandType='Text', CommandTimeout='30']
+      SELECT "d"."Id", "d"."Code", "d"."IsActive", "d"."Name"
+      FROM "DocumentTypes" AS "d"
+      WHERE "d"."Code" = @code AND "d"."IsActive"
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@docType_Id='?' (DbType = Int32), @req_DocumentId='?' (Size = 1)], CommandType='Text', CommandTimeout='30']
+      SELECT EXISTS (
+          SELECT 1
+          FROM "ApprovalInstances" AS "a"
+          WHERE "a"."DocumentTypeId" = @docType_Id AND "a"."DocumentId" = @req_DocumentId)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@docType_Id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "w1"."Id", "w1"."CreatedAtUtc", "w1"."CreatedByEmployeeId", "w1"."DocumentTypeId", "w1"."IsActive", "w1"."Name", "w1"."Version", "w0"."Id", "w0"."ApproverDepartmentId", "w0"."ApproverEmployeeId", "w0"."ApproverRoleId", "w0"."ApproverType", "w0"."IsActive", "w0"."Name", "w0"."SlaHours", "w0"."StageOrder", "w0"."WorkflowId"
+      FROM (
+          SELECT "w"."Id", "w"."CreatedAtUtc", "w"."CreatedByEmployeeId", "w"."DocumentTypeId", "w"."IsActive", "w"."Name", "w"."Version"
+          FROM "Workflows" AS "w"
+          WHERE "w"."DocumentTypeId" = @docType_Id AND "w"."IsActive"
+          LIMIT 1
+      ) AS "w1"
+      LEFT JOIN "WorkflowStages" AS "w0" ON "w1"."Id" = "w0"."WorkflowId"
+      ORDER BY "w1"."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = DateTime), @p1='?' (DbType = DateTime), @p2='?' (DbType = Int32), @p3='?' (DbType = Int32), @p4='?' (Size = 1), @p5='?' (DbType = Int32), @p6='?' (DbType = Int32), @p7='?' (DbType = Int32), @p8='?' (DbType = Int32), @p9='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "ApprovalInstances" ("CompletedAtUtc", "CreatedAtUtc", "CurrentStageOrder", "CycleNumber", "DocumentId", "DocumentTypeId", "InitiatorEmployeeId", "Status", "WorkflowId", "WorkflowVersion")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p10='?' (DbType = Int32), @p11='?' (DbType = Int32), @p12='?' (DbType = Int64), @p13='?', @p14='?' (DbType = DateTime), @p15='?' (DbType = Int32), @p16='?' (DbType = Int32), @p17='?' (DbType = Int64), @p18='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "ApprovalActions" ("ActedByEmployeeId", "ActionType", "ApprovalInstanceId", "Comment", "CreatedAtUtc", "CycleNumber", "FromStatus", "StageInstanceId", "ToStatus")
+      VALUES (@p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = DateTime), @p1='?' (DbType = Int32), @p2='?' (DbType = Int64), @p3='?' (DbType = Int32), @p4='?' (DbType = Int32), @p5='?' (DbType = Int32), @p6='?' (DbType = Int32), @p7='?' (DbType = DateTime), @p8='?' (Size = 16), @p9='?' (DbType = Int32), @p10='?' (DbType = Int32), @p11='?' (DbType = Int32), @p12='?' (DbType = Int32), @p13='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "StageInstances" ("ActedAtUtc", "ActedByEmployeeId", "ApprovalInstanceId", "ApproverDepartmentId", "ApproverRoleId", "ApproverType", "CycleNumber", "EnteredAtUtc", "Name", "ResolvedApproverEmployeeId", "SlaHours", "StageOrder", "Status", "WorkflowStageId")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = DateTime), @p1='?' (DbType = Int32), @p2='?' (DbType = Int64), @p3='?' (DbType = Int32), @p4='?' (DbType = Int32), @p5='?' (DbType = Int32), @p6='?' (DbType = Int32), @p7='?' (DbType = DateTime), @p8='?' (Size = 15), @p9='?' (DbType = Int32), @p10='?' (DbType = Int32), @p11='?' (DbType = Int32), @p12='?' (DbType = Int32), @p13='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "StageInstances" ("ActedAtUtc", "ActedByEmployeeId", "ApprovalInstanceId", "ApproverDepartmentId", "ApproverRoleId", "ApproverType", "CycleNumber", "EnteredAtUtc", "Name", "ResolvedApproverEmployeeId", "SlaHours", "StageOrder", "Status", "WorkflowStageId")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = DateTime), @p1='?' (DbType = Int32), @p2='?' (DbType = Int64), @p3='?' (DbType = Int32), @p4='?' (DbType = Int32), @p5='?' (DbType = Int32), @p6='?' (DbType = Int32), @p7='?' (DbType = DateTime), @p8='?' (Size = 11), @p9='?' (DbType = Int32), @p10='?' (DbType = Int32), @p11='?' (DbType = Int32), @p12='?' (DbType = Int32), @p13='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "StageInstances" ("ActedAtUtc", "ActedByEmployeeId", "ApprovalInstanceId", "ApproverDepartmentId", "ApproverRoleId", "ApproverType", "CycleNumber", "EnteredAtUtc", "Name", "ResolvedApproverEmployeeId", "SlaHours", "StageOrder", "Status", "WorkflowStageId")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int64), @p1='?' (DbType = Int32), @p2='?', @p3='?' (Size = 17), @p4='?' (DbType = DateTime), @p5='?' (Size = 232), @p6='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "OutboxMessages" ("ApprovalInstanceId", "Attempts", "Error", "EventType", "OccurredAtUtc", "PayloadJson", "ProcessedAtUtc")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "l"."Id", "l"."CreatedAtUtc", "l"."FromDate", "l"."IsLocked", "l"."OwnerEmployeeId", "l"."Reason", "l"."Status", "l"."ToDate"
+      FROM "LeaveRequests" AS "l"
+      WHERE "l"."Id" = @id
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "l"."Id", "l"."CreatedAtUtc", "l"."FromDate", "l"."IsLocked", "l"."OwnerEmployeeId", "l"."Reason", "l"."Status", "l"."ToDate"
+      FROM "LeaveRequests" AS "l"
+      WHERE "l"."Id" = @id
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "l"."Id", "l"."CreatedAtUtc", "l"."FromDate", "l"."IsLocked", "l"."OwnerEmployeeId", "l"."Reason", "l"."Status", "l"."ToDate"
+      FROM "LeaveRequests" AS "l"
+      WHERE "l"."Id" = @id
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@messageId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id", "o"."ApprovalInstanceId", "o"."Attempts", "o"."Error", "o"."EventType", "o"."OccurredAtUtc", "o"."PayloadJson", "o"."ProcessedAtUtc"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."Id" = @messageId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@payload_InstanceId='?' (DbType = Int64), @payload_CycleNumber='?' (DbType = Int32), @order='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "s"."Id", "s"."ActedAtUtc", "s"."ActedByEmployeeId", "s"."ApprovalInstanceId", "s"."ApproverDepartmentId", "s"."ApproverRoleId", "s"."ApproverType", "s"."CycleNumber", "s"."EnteredAtUtc", "s"."Name", "s"."ResolvedApproverEmployeeId", "s"."SlaHours", "s"."StageOrder", "s"."Status", "s"."WorkflowStageId"
+      FROM "StageInstances" AS "s"
+      WHERE "s"."ApprovalInstanceId" = @payload_InstanceId AND "s"."CycleNumber" = @payload_CycleNumber AND "s"."StageOrder" = @order
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@deptId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "d"."ManagerEmployeeId"
+      FROM "Departments" AS "d"
+      WHERE "d"."Id" = @deptId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@leaveId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "l"."Id", "l"."CreatedAtUtc", "l"."FromDate", "l"."IsLocked", "l"."OwnerEmployeeId", "l"."Reason", "l"."Status", "l"."ToDate"
+      FROM "LeaveRequests" AS "l"
+      WHERE "l"."Id" = @leaveId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p2='?' (DbType = Int32), @p0='?' (DbType = Boolean), @p1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      UPDATE "LeaveRequests" SET "IsLocked" = @p0, "Status" = @p1
+      WHERE "Id" = @p2
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int64), @p1='?' (Size = 69), @p2='?' (DbType = DateTime), @p3='?' (DbType = Boolean), @p4='?' (DbType = Int32), @p5='?' (Size = 17)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Notifications" ("ApprovalInstanceId", "Body", "CreatedAtUtc", "IsRead", "RecipientEmployeeId", "Title")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      UPDATE "OutboxMessages" SET "ProcessedAtUtc" = @p0
+      WHERE "Id" = @p1
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "l"."Id", "l"."CreatedAtUtc", "l"."FromDate", "l"."IsLocked", "l"."OwnerEmployeeId", "l"."Reason", "l"."Status", "l"."ToDate"
+      FROM "LeaveRequests" AS "l"
+      WHERE "l"."Id" = @id
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@instanceId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT "a0"."Id", "a0"."CompletedAtUtc", "a0"."CreatedAtUtc", "a0"."CurrentStageOrder", "a0"."CycleNumber", "a0"."DocumentId", "a0"."DocumentTypeId", "a0"."InitiatorEmployeeId", "a0"."Status", "a0"."WorkflowId", "a0"."WorkflowVersion", "s"."Id", "s"."ActedAtUtc", "s"."ActedByEmployeeId", "s"."ApprovalInstanceId", "s"."ApproverDepartmentId", "s"."ApproverRoleId", "s"."ApproverType", "s"."CycleNumber", "s"."EnteredAtUtc", "s"."Name", "s"."ResolvedApproverEmployeeId", "s"."SlaHours", "s"."StageOrder", "s"."Status", "s"."WorkflowStageId"
+      FROM (
+          SELECT "a"."Id", "a"."CompletedAtUtc", "a"."CreatedAtUtc", "a"."CurrentStageOrder", "a"."CycleNumber", "a"."DocumentId", "a"."DocumentTypeId", "a"."InitiatorEmployeeId", "a"."Status", "a"."WorkflowId", "a"."WorkflowVersion"
+          FROM "ApprovalInstances" AS "a"
+          WHERE "a"."Id" = @instanceId
+          LIMIT 1
+      ) AS "a0"
+      LEFT JOIN "StageInstances" AS "s" ON "a0"."Id" = "s"."ApprovalInstanceId"
+      ORDER BY "a0"."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "d"."Id", "d"."Code", "d"."IsActive", "d"."Name"
+      FROM "DocumentTypes" AS "d"
+      WHERE "d"."Id" = @id
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@employeeId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "e"."Id", "e"."DepartmentId", "e"."Email", "e"."FullName", "e"."IsActive"
+      FROM "Employees" AS "e"
+      WHERE "e"."Id" = @employeeId AND "e"."IsActive"
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@departmentId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "d"."ManagerEmployeeId"
+      FROM "Departments" AS "d"
+      WHERE "d"."Id" = @departmentId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@instanceId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT "a0"."Id", "a0"."CompletedAtUtc", "a0"."CreatedAtUtc", "a0"."CurrentStageOrder", "a0"."CycleNumber", "a0"."DocumentId", "a0"."DocumentTypeId", "a0"."InitiatorEmployeeId", "a0"."Status", "a0"."WorkflowId", "a0"."WorkflowVersion", "s"."Id", "s"."ActedAtUtc", "s"."ActedByEmployeeId", "s"."ApprovalInstanceId", "s"."ApproverDepartmentId", "s"."ApproverRoleId", "s"."ApproverType", "s"."CycleNumber", "s"."EnteredAtUtc", "s"."Name", "s"."ResolvedApproverEmployeeId", "s"."SlaHours", "s"."StageOrder", "s"."Status", "s"."WorkflowStageId"
+      FROM (
+          SELECT "a"."Id", "a"."CompletedAtUtc", "a"."CreatedAtUtc", "a"."CurrentStageOrder", "a"."CycleNumber", "a"."DocumentId", "a"."DocumentTypeId", "a"."InitiatorEmployeeId", "a"."Status", "a"."WorkflowId", "a"."WorkflowVersion"
+          FROM "ApprovalInstances" AS "a"
+          WHERE "a"."Id" = @instanceId
+          LIMIT 1
+      ) AS "a0"
+      LEFT JOIN "StageInstances" AS "s" ON "a0"."Id" = "s"."ApprovalInstanceId"
+      ORDER BY "a0"."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "d"."Id", "d"."Code", "d"."IsActive", "d"."Name"
+      FROM "DocumentTypes" AS "d"
+      WHERE "d"."Id" = @id
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@employeeId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "e"."Id", "e"."DepartmentId", "e"."Email", "e"."FullName", "e"."IsActive"
+      FROM "Employees" AS "e"
+      WHERE "e"."Id" = @employeeId AND "e"."IsActive"
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@departmentId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "d"."ManagerEmployeeId"
+      FROM "Departments" AS "d"
+      WHERE "d"."Id" = @departmentId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int32), @p1='?' (DbType = Int32), @p2='?' (DbType = Int64), @p3='?' (Size = 13), @p4='?' (DbType = DateTime), @p5='?' (DbType = Int32), @p6='?' (DbType = Int32), @p7='?' (DbType = Int64), @p8='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "ApprovalActions" ("ActedByEmployeeId", "ActionType", "ApprovalInstanceId", "Comment", "CreatedAtUtc", "CycleNumber", "FromStatus", "StageInstanceId", "ToStatus")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      UPDATE "ApprovalInstances" SET "CurrentStageOrder" = @p0
+      WHERE "Id" = @p1
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int64), @p1='?' (DbType = Int32), @p2='?', @p3='?' (Size = 13), @p4='?' (DbType = DateTime), @p5='?' (Size = 227), @p6='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "OutboxMessages" ("ApprovalInstanceId", "Attempts", "Error", "EventType", "OccurredAtUtc", "PayloadJson", "ProcessedAtUtc")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p3='?' (DbType = Int64), @p0='?' (DbType = DateTime), @p1='?' (DbType = Int32), @p2='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      UPDATE "StageInstances" SET "ActedAtUtc" = @p0, "ActedByEmployeeId" = @p1, "Status" = @p2
+      WHERE "Id" = @p3
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@instanceId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT "a0"."Id", "a0"."CompletedAtUtc", "a0"."CreatedAtUtc", "a0"."CurrentStageOrder", "a0"."CycleNumber", "a0"."DocumentId", "a0"."DocumentTypeId", "a0"."InitiatorEmployeeId", "a0"."Status", "a0"."WorkflowId", "a0"."WorkflowVersion", "s"."Id", "s"."ActedAtUtc", "s"."ActedByEmployeeId", "s"."ApprovalInstanceId", "s"."ApproverDepartmentId", "s"."ApproverRoleId", "s"."ApproverType", "s"."CycleNumber", "s"."EnteredAtUtc", "s"."Name", "s"."ResolvedApproverEmployeeId", "s"."SlaHours", "s"."StageOrder", "s"."Status", "s"."WorkflowStageId"
+      FROM (
+          SELECT "a"."Id", "a"."CompletedAtUtc", "a"."CreatedAtUtc", "a"."CurrentStageOrder", "a"."CycleNumber", "a"."DocumentId", "a"."DocumentTypeId", "a"."InitiatorEmployeeId", "a"."Status", "a"."WorkflowId", "a"."WorkflowVersion"
+          FROM "ApprovalInstances" AS "a"
+          WHERE "a"."Id" = @instanceId
+          LIMIT 1
+      ) AS "a0"
+      LEFT JOIN "StageInstances" AS "s" ON "a0"."Id" = "s"."ApprovalInstanceId"
+      ORDER BY "a0"."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "d"."Id", "d"."Code", "d"."IsActive", "d"."Name"
+      FROM "DocumentTypes" AS "d"
+      WHERE "d"."Id" = @id
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@employeeId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "e"."Id", "e"."DepartmentId", "e"."Email", "e"."FullName", "e"."IsActive"
+      FROM "Employees" AS "e"
+      WHERE "e"."Id" = @employeeId AND "e"."IsActive"
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@_8__locals2_employeeId='?' (DbType = Int32), @roleId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT EXISTS (
+          SELECT 1
+          FROM "EmployeeRoles" AS "e"
+          WHERE "e"."EmployeeId" = @_8__locals2_employeeId AND "e"."RoleId" = @roleId)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int32), @p1='?' (DbType = Int32), @p2='?' (DbType = Int64), @p3='?', @p4='?' (DbType = DateTime), @p5='?' (DbType = Int32), @p6='?' (DbType = Int32), @p7='?' (DbType = Int64), @p8='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "ApprovalActions" ("ActedByEmployeeId", "ActionType", "ApprovalInstanceId", "Comment", "CreatedAtUtc", "CycleNumber", "FromStatus", "StageInstanceId", "ToStatus")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      UPDATE "ApprovalInstances" SET "CurrentStageOrder" = @p0
+      WHERE "Id" = @p1
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int64), @p1='?' (DbType = Int32), @p2='?', @p3='?' (Size = 13), @p4='?' (DbType = DateTime), @p5='?' (Size = 223), @p6='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "OutboxMessages" ("ApprovalInstanceId", "Attempts", "Error", "EventType", "OccurredAtUtc", "PayloadJson", "ProcessedAtUtc")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p3='?' (DbType = Int64), @p0='?' (DbType = DateTime), @p1='?' (DbType = Int32), @p2='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      UPDATE "StageInstances" SET "ActedAtUtc" = @p0, "ActedByEmployeeId" = @p1, "Status" = @p2
+      WHERE "Id" = @p3
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@instanceId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT "a0"."Id", "a0"."CompletedAtUtc", "a0"."CreatedAtUtc", "a0"."CurrentStageOrder", "a0"."CycleNumber", "a0"."DocumentId", "a0"."DocumentTypeId", "a0"."InitiatorEmployeeId", "a0"."Status", "a0"."WorkflowId", "a0"."WorkflowVersion", "s"."Id", "s"."ActedAtUtc", "s"."ActedByEmployeeId", "s"."ApprovalInstanceId", "s"."ApproverDepartmentId", "s"."ApproverRoleId", "s"."ApproverType", "s"."CycleNumber", "s"."EnteredAtUtc", "s"."Name", "s"."ResolvedApproverEmployeeId", "s"."SlaHours", "s"."StageOrder", "s"."Status", "s"."WorkflowStageId"
+      FROM (
+          SELECT "a"."Id", "a"."CompletedAtUtc", "a"."CreatedAtUtc", "a"."CurrentStageOrder", "a"."CycleNumber", "a"."DocumentId", "a"."DocumentTypeId", "a"."InitiatorEmployeeId", "a"."Status", "a"."WorkflowId", "a"."WorkflowVersion"
+          FROM "ApprovalInstances" AS "a"
+          WHERE "a"."Id" = @instanceId
+          LIMIT 1
+      ) AS "a0"
+      LEFT JOIN "StageInstances" AS "s" ON "a0"."Id" = "s"."ApprovalInstanceId"
+      ORDER BY "a0"."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "d"."Id", "d"."Code", "d"."IsActive", "d"."Name"
+      FROM "DocumentTypes" AS "d"
+      WHERE "d"."Id" = @id
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@employeeId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "e"."Id", "e"."DepartmentId", "e"."Email", "e"."FullName", "e"."IsActive"
+      FROM "Employees" AS "e"
+      WHERE "e"."Id" = @employeeId AND "e"."IsActive"
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int32), @p1='?' (DbType = Int32), @p2='?' (DbType = Int64), @p3='?', @p4='?' (DbType = DateTime), @p5='?' (DbType = Int32), @p6='?' (DbType = Int32), @p7='?' (DbType = Int64), @p8='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "ApprovalActions" ("ActedByEmployeeId", "ActionType", "ApprovalInstanceId", "Comment", "CreatedAtUtc", "CycleNumber", "FromStatus", "StageInstanceId", "ToStatus")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p3='?' (DbType = Int64), @p0='?' (DbType = DateTime), @p1='?' (DbType = Int32), @p2='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      UPDATE "ApprovalInstances" SET "CompletedAtUtc" = @p0, "CurrentStageOrder" = @p1, "Status" = @p2
+      WHERE "Id" = @p3
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int64), @p1='?' (DbType = Int32), @p2='?', @p3='?' (Size = 16), @p4='?' (DbType = DateTime), @p5='?' (Size = 220), @p6='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "OutboxMessages" ("ApprovalInstanceId", "Attempts", "Error", "EventType", "OccurredAtUtc", "PayloadJson", "ProcessedAtUtc")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p3='?' (DbType = Int64), @p0='?' (DbType = DateTime), @p1='?' (DbType = Int32), @p2='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      UPDATE "StageInstances" SET "ActedAtUtc" = @p0, "ActedByEmployeeId" = @p1, "Status" = @p2
+      WHERE "Id" = @p3
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "l"."Id", "l"."CreatedAtUtc", "l"."FromDate", "l"."IsLocked", "l"."OwnerEmployeeId", "l"."Reason", "l"."Status", "l"."ToDate"
+      FROM "LeaveRequests" AS "l"
+      WHERE "l"."Id" = @id
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@messageId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id", "o"."ApprovalInstanceId", "o"."Attempts", "o"."Error", "o"."EventType", "o"."OccurredAtUtc", "o"."PayloadJson", "o"."ProcessedAtUtc"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."Id" = @messageId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@payload_InstanceId='?' (DbType = Int64), @payload_CycleNumber='?' (DbType = Int32), @order='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "s"."Id", "s"."ActedAtUtc", "s"."ActedByEmployeeId", "s"."ApprovalInstanceId", "s"."ApproverDepartmentId", "s"."ApproverRoleId", "s"."ApproverType", "s"."CycleNumber", "s"."EnteredAtUtc", "s"."Name", "s"."ResolvedApproverEmployeeId", "s"."SlaHours", "s"."StageOrder", "s"."Status", "s"."WorkflowStageId"
+      FROM "StageInstances" AS "s"
+      WHERE "s"."ApprovalInstanceId" = @payload_InstanceId AND "s"."CycleNumber" = @payload_CycleNumber AND "s"."StageOrder" = @order
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@roleId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT DISTINCT "e1"."Id"
+      FROM "EmployeeRoles" AS "e"
+      INNER JOIN (
+          SELECT "e0"."Id"
+          FROM "Employees" AS "e0"
+          WHERE "e0"."IsActive"
+      ) AS "e1" ON "e"."EmployeeId" = "e1"."Id"
+      WHERE "e"."RoleId" = @roleId
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@leaveId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "l"."Id", "l"."CreatedAtUtc", "l"."FromDate", "l"."IsLocked", "l"."OwnerEmployeeId", "l"."Reason", "l"."Status", "l"."ToDate"
+      FROM "LeaveRequests" AS "l"
+      WHERE "l"."Id" = @leaveId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int64), @p1='?' (Size = 68), @p2='?' (DbType = DateTime), @p3='?' (DbType = Boolean), @p4='?' (DbType = Int32), @p5='?' (Size = 17)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Notifications" ("ApprovalInstanceId", "Body", "CreatedAtUtc", "IsRead", "RecipientEmployeeId", "Title")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      UPDATE "OutboxMessages" SET "ProcessedAtUtc" = @p0
+      WHERE "Id" = @p1
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@messageId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id", "o"."ApprovalInstanceId", "o"."Attempts", "o"."Error", "o"."EventType", "o"."OccurredAtUtc", "o"."PayloadJson", "o"."ProcessedAtUtc"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."Id" = @messageId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@payload_InstanceId='?' (DbType = Int64), @payload_CycleNumber='?' (DbType = Int32), @order='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "s"."Id", "s"."ActedAtUtc", "s"."ActedByEmployeeId", "s"."ApprovalInstanceId", "s"."ApproverDepartmentId", "s"."ApproverRoleId", "s"."ApproverType", "s"."CycleNumber", "s"."EnteredAtUtc", "s"."Name", "s"."ResolvedApproverEmployeeId", "s"."SlaHours", "s"."StageOrder", "s"."Status", "s"."WorkflowStageId"
+      FROM "StageInstances" AS "s"
+      WHERE "s"."ApprovalInstanceId" = @payload_InstanceId AND "s"."CycleNumber" = @payload_CycleNumber AND "s"."StageOrder" = @order
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@leaveId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "l"."Id", "l"."CreatedAtUtc", "l"."FromDate", "l"."IsLocked", "l"."OwnerEmployeeId", "l"."Reason", "l"."Status", "l"."ToDate"
+      FROM "LeaveRequests" AS "l"
+      WHERE "l"."Id" = @leaveId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int64), @p1='?' (Size = 64), @p2='?' (DbType = DateTime), @p3='?' (DbType = Boolean), @p4='?' (DbType = Int32), @p5='?' (Size = 17)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Notifications" ("ApprovalInstanceId", "Body", "CreatedAtUtc", "IsRead", "RecipientEmployeeId", "Title")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      UPDATE "OutboxMessages" SET "ProcessedAtUtc" = @p0
+      WHERE "Id" = @p1
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@messageId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id", "o"."ApprovalInstanceId", "o"."Attempts", "o"."Error", "o"."EventType", "o"."OccurredAtUtc", "o"."PayloadJson", "o"."ProcessedAtUtc"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."Id" = @messageId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@leaveId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "l"."Id", "l"."CreatedAtUtc", "l"."FromDate", "l"."IsLocked", "l"."OwnerEmployeeId", "l"."Reason", "l"."Status", "l"."ToDate"
+      FROM "LeaveRequests" AS "l"
+      WHERE "l"."Id" = @leaveId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p2='?' (DbType = Int32), @p0='?' (DbType = Boolean), @p1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      UPDATE "LeaveRequests" SET "IsLocked" = @p0, "Status" = @p1
+      WHERE "Id" = @p2
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int64), @p1='?' (Size = 39), @p2='?' (DbType = DateTime), @p3='?' (DbType = Boolean), @p4='?' (DbType = Int32), @p5='?' (Size = 17)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Notifications" ("ApprovalInstanceId", "Body", "CreatedAtUtc", "IsRead", "RecipientEmployeeId", "Title")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      UPDATE "OutboxMessages" SET "ProcessedAtUtc" = @p0
+      WHERE "Id" = @p1
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "l"."Id", "l"."CreatedAtUtc", "l"."FromDate", "l"."IsLocked", "l"."OwnerEmployeeId", "l"."Reason", "l"."Status", "l"."ToDate"
+      FROM "LeaveRequests" AS "l"
+      WHERE "l"."Id" = @id
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "l"."Id", "l"."CreatedAtUtc", "l"."FromDate", "l"."IsLocked", "l"."OwnerEmployeeId", "l"."Reason", "l"."Status", "l"."ToDate"
+      FROM "LeaveRequests" AS "l"
+      WHERE "l"."Id" = @id
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = DateTime), @p1='?' (DbType = Date), @p2='?' (DbType = Boolean), @p3='?' (DbType = Int32), @p4='?' (Size = 4), @p5='?' (DbType = Int32), @p6='?' (DbType = Date)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "LeaveRequests" ("CreatedAtUtc", "FromDate", "IsLocked", "OwnerEmployeeId", "Reason", "Status", "ToDate")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "l"."Id", "l"."CreatedAtUtc", "l"."FromDate", "l"."IsLocked", "l"."OwnerEmployeeId", "l"."Reason", "l"."Status", "l"."ToDate"
+      FROM "LeaveRequests" AS "l"
+      WHERE "l"."Id" = @id
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@code='?' (Size = 12)], CommandType='Text', CommandTimeout='30']
+      SELECT "d"."Id", "d"."Code", "d"."IsActive", "d"."Name"
+      FROM "DocumentTypes" AS "d"
+      WHERE "d"."Code" = @code AND "d"."IsActive"
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@docType_Id='?' (DbType = Int32), @req_DocumentId='?' (Size = 1)], CommandType='Text', CommandTimeout='30']
+      SELECT EXISTS (
+          SELECT 1
+          FROM "ApprovalInstances" AS "a"
+          WHERE "a"."DocumentTypeId" = @docType_Id AND "a"."DocumentId" = @req_DocumentId)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@docType_Id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "w1"."Id", "w1"."CreatedAtUtc", "w1"."CreatedByEmployeeId", "w1"."DocumentTypeId", "w1"."IsActive", "w1"."Name", "w1"."Version", "w0"."Id", "w0"."ApproverDepartmentId", "w0"."ApproverEmployeeId", "w0"."ApproverRoleId", "w0"."ApproverType", "w0"."IsActive", "w0"."Name", "w0"."SlaHours", "w0"."StageOrder", "w0"."WorkflowId"
+      FROM (
+          SELECT "w"."Id", "w"."CreatedAtUtc", "w"."CreatedByEmployeeId", "w"."DocumentTypeId", "w"."IsActive", "w"."Name", "w"."Version"
+          FROM "Workflows" AS "w"
+          WHERE "w"."DocumentTypeId" = @docType_Id AND "w"."IsActive"
+          LIMIT 1
+      ) AS "w1"
+      LEFT JOIN "WorkflowStages" AS "w0" ON "w1"."Id" = "w0"."WorkflowId"
+      ORDER BY "w1"."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = DateTime), @p1='?' (DbType = DateTime), @p2='?' (DbType = Int32), @p3='?' (DbType = Int32), @p4='?' (Size = 1), @p5='?' (DbType = Int32), @p6='?' (DbType = Int32), @p7='?' (DbType = Int32), @p8='?' (DbType = Int32), @p9='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "ApprovalInstances" ("CompletedAtUtc", "CreatedAtUtc", "CurrentStageOrder", "CycleNumber", "DocumentId", "DocumentTypeId", "InitiatorEmployeeId", "Status", "WorkflowId", "WorkflowVersion")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p10='?' (DbType = Int32), @p11='?' (DbType = Int32), @p12='?' (DbType = Int64), @p13='?', @p14='?' (DbType = DateTime), @p15='?' (DbType = Int32), @p16='?' (DbType = Int32), @p17='?' (DbType = Int64), @p18='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "ApprovalActions" ("ActedByEmployeeId", "ActionType", "ApprovalInstanceId", "Comment", "CreatedAtUtc", "CycleNumber", "FromStatus", "StageInstanceId", "ToStatus")
+      VALUES (@p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = DateTime), @p1='?' (DbType = Int32), @p2='?' (DbType = Int64), @p3='?' (DbType = Int32), @p4='?' (DbType = Int32), @p5='?' (DbType = Int32), @p6='?' (DbType = Int32), @p7='?' (DbType = DateTime), @p8='?' (Size = 16), @p9='?' (DbType = Int32), @p10='?' (DbType = Int32), @p11='?' (DbType = Int32), @p12='?' (DbType = Int32), @p13='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "StageInstances" ("ActedAtUtc", "ActedByEmployeeId", "ApprovalInstanceId", "ApproverDepartmentId", "ApproverRoleId", "ApproverType", "CycleNumber", "EnteredAtUtc", "Name", "ResolvedApproverEmployeeId", "SlaHours", "StageOrder", "Status", "WorkflowStageId")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = DateTime), @p1='?' (DbType = Int32), @p2='?' (DbType = Int64), @p3='?' (DbType = Int32), @p4='?' (DbType = Int32), @p5='?' (DbType = Int32), @p6='?' (DbType = Int32), @p7='?' (DbType = DateTime), @p8='?' (Size = 15), @p9='?' (DbType = Int32), @p10='?' (DbType = Int32), @p11='?' (DbType = Int32), @p12='?' (DbType = Int32), @p13='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "StageInstances" ("ActedAtUtc", "ActedByEmployeeId", "ApprovalInstanceId", "ApproverDepartmentId", "ApproverRoleId", "ApproverType", "CycleNumber", "EnteredAtUtc", "Name", "ResolvedApproverEmployeeId", "SlaHours", "StageOrder", "Status", "WorkflowStageId")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = DateTime), @p1='?' (DbType = Int32), @p2='?' (DbType = Int64), @p3='?' (DbType = Int32), @p4='?' (DbType = Int32), @p5='?' (DbType = Int32), @p6='?' (DbType = Int32), @p7='?' (DbType = DateTime), @p8='?' (Size = 11), @p9='?' (DbType = Int32), @p10='?' (DbType = Int32), @p11='?' (DbType = Int32), @p12='?' (DbType = Int32), @p13='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "StageInstances" ("ActedAtUtc", "ActedByEmployeeId", "ApprovalInstanceId", "ApproverDepartmentId", "ApproverRoleId", "ApproverType", "CycleNumber", "EnteredAtUtc", "Name", "ResolvedApproverEmployeeId", "SlaHours", "StageOrder", "Status", "WorkflowStageId")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int64), @p1='?' (DbType = Int32), @p2='?', @p3='?' (Size = 17), @p4='?' (DbType = DateTime), @p5='?' (Size = 232), @p6='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "OutboxMessages" ("ApprovalInstanceId", "Attempts", "Error", "EventType", "OccurredAtUtc", "PayloadJson", "ProcessedAtUtc")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@instanceId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT "a0"."Id", "a0"."CompletedAtUtc", "a0"."CreatedAtUtc", "a0"."CurrentStageOrder", "a0"."CycleNumber", "a0"."DocumentId", "a0"."DocumentTypeId", "a0"."InitiatorEmployeeId", "a0"."Status", "a0"."WorkflowId", "a0"."WorkflowVersion", "s"."Id", "s"."ActedAtUtc", "s"."ActedByEmployeeId", "s"."ApprovalInstanceId", "s"."ApproverDepartmentId", "s"."ApproverRoleId", "s"."ApproverType", "s"."CycleNumber", "s"."EnteredAtUtc", "s"."Name", "s"."ResolvedApproverEmployeeId", "s"."SlaHours", "s"."StageOrder", "s"."Status", "s"."WorkflowStageId"
+      FROM (
+          SELECT "a"."Id", "a"."CompletedAtUtc", "a"."CreatedAtUtc", "a"."CurrentStageOrder", "a"."CycleNumber", "a"."DocumentId", "a"."DocumentTypeId", "a"."InitiatorEmployeeId", "a"."Status", "a"."WorkflowId", "a"."WorkflowVersion"
+          FROM "ApprovalInstances" AS "a"
+          WHERE "a"."Id" = @instanceId
+          LIMIT 1
+      ) AS "a0"
+      LEFT JOIN "StageInstances" AS "s" ON "a0"."Id" = "s"."ApprovalInstanceId"
+      ORDER BY "a0"."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "d"."Id", "d"."Code", "d"."IsActive", "d"."Name"
+      FROM "DocumentTypes" AS "d"
+      WHERE "d"."Id" = @id
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@employeeId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "e"."Id", "e"."DepartmentId", "e"."Email", "e"."FullName", "e"."IsActive"
+      FROM "Employees" AS "e"
+      WHERE "e"."Id" = @employeeId AND "e"."IsActive"
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@departmentId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "d"."ManagerEmployeeId"
+      FROM "Departments" AS "d"
+      WHERE "d"."Id" = @departmentId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@instanceId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT "a0"."Id", "a0"."CompletedAtUtc", "a0"."CreatedAtUtc", "a0"."CurrentStageOrder", "a0"."CycleNumber", "a0"."DocumentId", "a0"."DocumentTypeId", "a0"."InitiatorEmployeeId", "a0"."Status", "a0"."WorkflowId", "a0"."WorkflowVersion", "s"."Id", "s"."ActedAtUtc", "s"."ActedByEmployeeId", "s"."ApprovalInstanceId", "s"."ApproverDepartmentId", "s"."ApproverRoleId", "s"."ApproverType", "s"."CycleNumber", "s"."EnteredAtUtc", "s"."Name", "s"."ResolvedApproverEmployeeId", "s"."SlaHours", "s"."StageOrder", "s"."Status", "s"."WorkflowStageId"
+      FROM (
+          SELECT "a"."Id", "a"."CompletedAtUtc", "a"."CreatedAtUtc", "a"."CurrentStageOrder", "a"."CycleNumber", "a"."DocumentId", "a"."DocumentTypeId", "a"."InitiatorEmployeeId", "a"."Status", "a"."WorkflowId", "a"."WorkflowVersion"
+          FROM "ApprovalInstances" AS "a"
+          WHERE "a"."Id" = @instanceId
+          LIMIT 1
+      ) AS "a0"
+      LEFT JOIN "StageInstances" AS "s" ON "a0"."Id" = "s"."ApprovalInstanceId"
+      ORDER BY "a0"."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "d"."Id", "d"."Code", "d"."IsActive", "d"."Name"
+      FROM "DocumentTypes" AS "d"
+      WHERE "d"."Id" = @id
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@employeeId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "e"."Id", "e"."DepartmentId", "e"."Email", "e"."FullName", "e"."IsActive"
+      FROM "Employees" AS "e"
+      WHERE "e"."Id" = @employeeId AND "e"."IsActive"
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@departmentId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "d"."ManagerEmployeeId"
+      FROM "Departments" AS "d"
+      WHERE "d"."Id" = @departmentId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int32), @p1='?' (DbType = Int32), @p2='?' (DbType = Int64), @p3='?' (Size = 24), @p4='?' (DbType = DateTime), @p5='?' (DbType = Int32), @p6='?' (DbType = Int32), @p7='?' (DbType = Int64), @p8='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "ApprovalActions" ("ActedByEmployeeId", "ActionType", "ApprovalInstanceId", "Comment", "CreatedAtUtc", "CycleNumber", "FromStatus", "StageInstanceId", "ToStatus")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p2='?' (DbType = Int64), @p0='?' (DbType = Int32), @p1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      UPDATE "ApprovalInstances" SET "CurrentStageOrder" = @p0, "Status" = @p1
+      WHERE "Id" = @p2
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int64), @p1='?' (DbType = Int32), @p2='?', @p3='?' (Size = 16), @p4='?' (DbType = DateTime), @p5='?' (Size = 242), @p6='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "OutboxMessages" ("ApprovalInstanceId", "Attempts", "Error", "EventType", "OccurredAtUtc", "PayloadJson", "ProcessedAtUtc")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p3='?' (DbType = Int64), @p0='?' (DbType = DateTime), @p1='?' (DbType = Int32), @p2='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      UPDATE "StageInstances" SET "ActedAtUtc" = @p0, "ActedByEmployeeId" = @p1, "Status" = @p2
+      WHERE "Id" = @p3
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@messageId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id", "o"."ApprovalInstanceId", "o"."Attempts", "o"."Error", "o"."EventType", "o"."OccurredAtUtc", "o"."PayloadJson", "o"."ProcessedAtUtc"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."Id" = @messageId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@payload_InstanceId='?' (DbType = Int64), @payload_CycleNumber='?' (DbType = Int32), @order='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "s"."Id", "s"."ActedAtUtc", "s"."ActedByEmployeeId", "s"."ApprovalInstanceId", "s"."ApproverDepartmentId", "s"."ApproverRoleId", "s"."ApproverType", "s"."CycleNumber", "s"."EnteredAtUtc", "s"."Name", "s"."ResolvedApproverEmployeeId", "s"."SlaHours", "s"."StageOrder", "s"."Status", "s"."WorkflowStageId"
+      FROM "StageInstances" AS "s"
+      WHERE "s"."ApprovalInstanceId" = @payload_InstanceId AND "s"."CycleNumber" = @payload_CycleNumber AND "s"."StageOrder" = @order
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@deptId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "d"."ManagerEmployeeId"
+      FROM "Departments" AS "d"
+      WHERE "d"."Id" = @deptId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@leaveId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "l"."Id", "l"."CreatedAtUtc", "l"."FromDate", "l"."IsLocked", "l"."OwnerEmployeeId", "l"."Reason", "l"."Status", "l"."ToDate"
+      FROM "LeaveRequests" AS "l"
+      WHERE "l"."Id" = @leaveId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p2='?' (DbType = Int32), @p0='?' (DbType = Boolean), @p1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      UPDATE "LeaveRequests" SET "IsLocked" = @p0, "Status" = @p1
+      WHERE "Id" = @p2
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int64), @p1='?' (Size = 69), @p2='?' (DbType = DateTime), @p3='?' (DbType = Boolean), @p4='?' (DbType = Int32), @p5='?' (Size = 17)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Notifications" ("ApprovalInstanceId", "Body", "CreatedAtUtc", "IsRead", "RecipientEmployeeId", "Title")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      UPDATE "OutboxMessages" SET "ProcessedAtUtc" = @p0
+      WHERE "Id" = @p1
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@messageId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id", "o"."ApprovalInstanceId", "o"."Attempts", "o"."Error", "o"."EventType", "o"."OccurredAtUtc", "o"."PayloadJson", "o"."ProcessedAtUtc"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."Id" = @messageId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@leaveId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "l"."Id", "l"."CreatedAtUtc", "l"."FromDate", "l"."IsLocked", "l"."OwnerEmployeeId", "l"."Reason", "l"."Status", "l"."ToDate"
+      FROM "LeaveRequests" AS "l"
+      WHERE "l"."Id" = @leaveId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p2='?' (DbType = Int32), @p0='?' (DbType = Boolean), @p1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      UPDATE "LeaveRequests" SET "IsLocked" = @p0, "Status" = @p1
+      WHERE "Id" = @p2
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int64), @p1='?' (Size = 61), @p2='?' (DbType = DateTime), @p3='?' (DbType = Boolean), @p4='?' (DbType = Int32), @p5='?' (Size = 17)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Notifications" ("ApprovalInstanceId", "Body", "CreatedAtUtc", "IsRead", "RecipientEmployeeId", "Title")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      UPDATE "OutboxMessages" SET "ProcessedAtUtc" = @p0
+      WHERE "Id" = @p1
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "l"."Id", "l"."CreatedAtUtc", "l"."FromDate", "l"."IsLocked", "l"."OwnerEmployeeId", "l"."Reason", "l"."Status", "l"."ToDate"
+      FROM "LeaveRequests" AS "l"
+      WHERE "l"."Id" = @id
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "l"."Id", "l"."CreatedAtUtc", "l"."FromDate", "l"."IsLocked", "l"."OwnerEmployeeId", "l"."Reason", "l"."Status", "l"."ToDate"
+      FROM "LeaveRequests" AS "l"
+      WHERE "l"."Id" = @id
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p3='?' (DbType = Int32), @p0='?' (DbType = Date), @p1='?' (Size = 18), @p2='?' (DbType = Date)], CommandType='Text', CommandTimeout='30']
+      UPDATE "LeaveRequests" SET "FromDate" = @p0, "Reason" = @p1, "ToDate" = @p2
+      WHERE "Id" = @p3
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@instanceId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT "a0"."Id", "a0"."CompletedAtUtc", "a0"."CreatedAtUtc", "a0"."CurrentStageOrder", "a0"."CycleNumber", "a0"."DocumentId", "a0"."DocumentTypeId", "a0"."InitiatorEmployeeId", "a0"."Status", "a0"."WorkflowId", "a0"."WorkflowVersion", "s"."Id", "s"."ActedAtUtc", "s"."ActedByEmployeeId", "s"."ApprovalInstanceId", "s"."ApproverDepartmentId", "s"."ApproverRoleId", "s"."ApproverType", "s"."CycleNumber", "s"."EnteredAtUtc", "s"."Name", "s"."ResolvedApproverEmployeeId", "s"."SlaHours", "s"."StageOrder", "s"."Status", "s"."WorkflowStageId"
+      FROM (
+          SELECT "a"."Id", "a"."CompletedAtUtc", "a"."CreatedAtUtc", "a"."CurrentStageOrder", "a"."CycleNumber", "a"."DocumentId", "a"."DocumentTypeId", "a"."InitiatorEmployeeId", "a"."Status", "a"."WorkflowId", "a"."WorkflowVersion"
+          FROM "ApprovalInstances" AS "a"
+          WHERE "a"."Id" = @instanceId
+          LIMIT 1
+      ) AS "a0"
+      LEFT JOIN "StageInstances" AS "s" ON "a0"."Id" = "s"."ApprovalInstanceId"
+      ORDER BY "a0"."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "d"."Id", "d"."Code", "d"."IsActive", "d"."Name"
+      FROM "DocumentTypes" AS "d"
+      WHERE "d"."Id" = @id
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@docType_Id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "w1"."Id", "w1"."CreatedAtUtc", "w1"."CreatedByEmployeeId", "w1"."DocumentTypeId", "w1"."IsActive", "w1"."Name", "w1"."Version", "w0"."Id", "w0"."ApproverDepartmentId", "w0"."ApproverEmployeeId", "w0"."ApproverRoleId", "w0"."ApproverType", "w0"."IsActive", "w0"."Name", "w0"."SlaHours", "w0"."StageOrder", "w0"."WorkflowId"
+      FROM (
+          SELECT "w"."Id", "w"."CreatedAtUtc", "w"."CreatedByEmployeeId", "w"."DocumentTypeId", "w"."IsActive", "w"."Name", "w"."Version"
+          FROM "Workflows" AS "w"
+          WHERE "w"."DocumentTypeId" = @docType_Id AND "w"."IsActive"
+          LIMIT 1
+      ) AS "w1"
+      LEFT JOIN "WorkflowStages" AS "w0" ON "w1"."Id" = "w0"."WorkflowId"
+      ORDER BY "w1"."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int32), @p1='?' (DbType = Int32), @p2='?' (DbType = Int64), @p3='?', @p4='?' (DbType = DateTime), @p5='?' (DbType = Int32), @p6='?' (DbType = Int32), @p7='?' (DbType = Int64), @p8='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "ApprovalActions" ("ActedByEmployeeId", "ActionType", "ApprovalInstanceId", "Comment", "CreatedAtUtc", "CycleNumber", "FromStatus", "StageInstanceId", "ToStatus")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p3='?' (DbType = Int64), @p0='?' (DbType = Int32), @p1='?' (DbType = Int32), @p2='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      UPDATE "ApprovalInstances" SET "CurrentStageOrder" = @p0, "CycleNumber" = @p1, "Status" = @p2
+      WHERE "Id" = @p3
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int64), @p1='?' (DbType = Int32), @p2='?', @p3='?' (Size = 19), @p4='?' (DbType = DateTime), @p5='?' (Size = 234), @p6='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "OutboxMessages" ("ApprovalInstanceId", "Attempts", "Error", "EventType", "OccurredAtUtc", "PayloadJson", "ProcessedAtUtc")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = DateTime), @p1='?' (DbType = Int32), @p2='?' (DbType = Int64), @p3='?' (DbType = Int32), @p4='?' (DbType = Int32), @p5='?' (DbType = Int32), @p6='?' (DbType = Int32), @p7='?' (DbType = DateTime), @p8='?' (Size = 16), @p9='?' (DbType = Int32), @p10='?' (DbType = Int32), @p11='?' (DbType = Int32), @p12='?' (DbType = Int32), @p13='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "StageInstances" ("ActedAtUtc", "ActedByEmployeeId", "ApprovalInstanceId", "ApproverDepartmentId", "ApproverRoleId", "ApproverType", "CycleNumber", "EnteredAtUtc", "Name", "ResolvedApproverEmployeeId", "SlaHours", "StageOrder", "Status", "WorkflowStageId")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = DateTime), @p1='?' (DbType = Int32), @p2='?' (DbType = Int64), @p3='?' (DbType = Int32), @p4='?' (DbType = Int32), @p5='?' (DbType = Int32), @p6='?' (DbType = Int32), @p7='?' (DbType = DateTime), @p8='?' (Size = 15), @p9='?' (DbType = Int32), @p10='?' (DbType = Int32), @p11='?' (DbType = Int32), @p12='?' (DbType = Int32), @p13='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "StageInstances" ("ActedAtUtc", "ActedByEmployeeId", "ApprovalInstanceId", "ApproverDepartmentId", "ApproverRoleId", "ApproverType", "CycleNumber", "EnteredAtUtc", "Name", "ResolvedApproverEmployeeId", "SlaHours", "StageOrder", "Status", "WorkflowStageId")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = DateTime), @p1='?' (DbType = Int32), @p2='?' (DbType = Int64), @p3='?' (DbType = Int32), @p4='?' (DbType = Int32), @p5='?' (DbType = Int32), @p6='?' (DbType = Int32), @p7='?' (DbType = DateTime), @p8='?' (Size = 11), @p9='?' (DbType = Int32), @p10='?' (DbType = Int32), @p11='?' (DbType = Int32), @p12='?' (DbType = Int32), @p13='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "StageInstances" ("ActedAtUtc", "ActedByEmployeeId", "ApprovalInstanceId", "ApproverDepartmentId", "ApproverRoleId", "ApproverType", "CycleNumber", "EnteredAtUtc", "Name", "ResolvedApproverEmployeeId", "SlaHours", "StageOrder", "Status", "WorkflowStageId")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@instanceId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT "a1"."Id", "a1"."CompletedAtUtc", "a1"."CreatedAtUtc", "a1"."CurrentStageOrder", "a1"."CycleNumber", "a1"."DocumentId", "a1"."DocumentTypeId", "a1"."InitiatorEmployeeId", "a1"."Status", "a1"."WorkflowId", "a1"."WorkflowVersion", "a0"."Id", "a0"."ActedByEmployeeId", "a0"."ActionType", "a0"."ApprovalInstanceId", "a0"."Comment", "a0"."CreatedAtUtc", "a0"."CycleNumber", "a0"."FromStatus", "a0"."StageInstanceId", "a0"."ToStatus"
+      FROM (
+          SELECT "a"."Id", "a"."CompletedAtUtc", "a"."CreatedAtUtc", "a"."CurrentStageOrder", "a"."CycleNumber", "a"."DocumentId", "a"."DocumentTypeId", "a"."InitiatorEmployeeId", "a"."Status", "a"."WorkflowId", "a"."WorkflowVersion"
+          FROM "ApprovalInstances" AS "a"
+          WHERE "a"."Id" = @instanceId
+          LIMIT 1
+      ) AS "a1"
+      LEFT JOIN "ApprovalActions" AS "a0" ON "a1"."Id" = "a0"."ApprovalInstanceId"
+      ORDER BY "a1"."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@messageId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id", "o"."ApprovalInstanceId", "o"."Attempts", "o"."Error", "o"."EventType", "o"."OccurredAtUtc", "o"."PayloadJson", "o"."ProcessedAtUtc"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."Id" = @messageId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@payload_InstanceId='?' (DbType = Int64), @payload_CycleNumber='?' (DbType = Int32), @order='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "s"."Id", "s"."ActedAtUtc", "s"."ActedByEmployeeId", "s"."ApprovalInstanceId", "s"."ApproverDepartmentId", "s"."ApproverRoleId", "s"."ApproverType", "s"."CycleNumber", "s"."EnteredAtUtc", "s"."Name", "s"."ResolvedApproverEmployeeId", "s"."SlaHours", "s"."StageOrder", "s"."Status", "s"."WorkflowStageId"
+      FROM "StageInstances" AS "s"
+      WHERE "s"."ApprovalInstanceId" = @payload_InstanceId AND "s"."CycleNumber" = @payload_CycleNumber AND "s"."StageOrder" = @order
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@deptId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "d"."ManagerEmployeeId"
+      FROM "Departments" AS "d"
+      WHERE "d"."Id" = @deptId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@leaveId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "l"."Id", "l"."CreatedAtUtc", "l"."FromDate", "l"."IsLocked", "l"."OwnerEmployeeId", "l"."Reason", "l"."Status", "l"."ToDate"
+      FROM "LeaveRequests" AS "l"
+      WHERE "l"."Id" = @leaveId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p2='?' (DbType = Int32), @p0='?' (DbType = Boolean), @p1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      UPDATE "LeaveRequests" SET "IsLocked" = @p0, "Status" = @p1
+      WHERE "Id" = @p2
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Int64), @p1='?' (Size = 69), @p2='?' (DbType = DateTime), @p3='?' (DbType = Boolean), @p4='?' (DbType = Int32), @p5='?' (Size = 17)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Notifications" ("ApprovalInstanceId", "Body", "CreatedAtUtc", "IsRead", "RecipientEmployeeId", "Title")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5)
+      RETURNING "Id";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      UPDATE "OutboxMessages" SET "ProcessedAtUtc" = @p0
+      WHERE "Id" = @p1
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT "w"."Id", "w"."CreatedAtUtc", "w"."CreatedByEmployeeId", "w"."DocumentTypeId", "w"."IsActive", "w"."Name", "w"."Version", "w0"."Id", "w0"."ApproverDepartmentId", "w0"."ApproverEmployeeId", "w0"."ApproverRoleId", "w0"."ApproverType", "w0"."IsActive", "w0"."Name", "w0"."SlaHours", "w0"."StageOrder", "w0"."WorkflowId"
+      FROM "Workflows" AS "w"
+      LEFT JOIN "WorkflowStages" AS "w0" ON "w"."Id" = "w0"."WorkflowId"
+      ORDER BY "w"."DocumentTypeId", "w"."Version", "w"."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT "d"."Id", "d"."Code", "d"."IsActive", "d"."Name"
+      FROM "DocumentTypes" AS "d"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT "a"."Id", "a"."CompletedAtUtc", "a"."CreatedAtUtc", "a"."CurrentStageOrder", "a"."CycleNumber", "a"."DocumentId", "a"."DocumentTypeId", "a"."InitiatorEmployeeId", "a"."Status", "a"."WorkflowId", "a"."WorkflowVersion", "s"."Id", "s"."ActedAtUtc", "s"."ActedByEmployeeId", "s"."ApprovalInstanceId", "s"."ApproverDepartmentId", "s"."ApproverRoleId", "s"."ApproverType", "s"."CycleNumber", "s"."EnteredAtUtc", "s"."Name", "s"."ResolvedApproverEmployeeId", "s"."SlaHours", "s"."StageOrder", "s"."Status", "s"."WorkflowStageId"
+      FROM "ApprovalInstances" AS "a"
+      LEFT JOIN "StageInstances" AS "s" ON "a"."Id" = "s"."ApprovalInstanceId"
+      WHERE "a"."Status" = 1
+      ORDER BY "a"."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@employeeId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "e"."Id", "e"."DepartmentId", "e"."Email", "e"."FullName", "e"."IsActive"
+      FROM "Employees" AS "e"
+      WHERE "e"."Id" = @employeeId AND "e"."IsActive"
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@departmentId='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "d"."ManagerEmployeeId"
+      FROM "Departments" AS "d"
+      WHERE "d"."Id" = @departmentId
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id"
+      FROM "OutboxMessages" AS "o"
+      WHERE "o"."ProcessedAtUtc" IS NULL
+      ORDER BY "o"."Id"
+      LIMIT @p
