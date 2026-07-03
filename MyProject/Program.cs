@@ -84,6 +84,11 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
 app.UseHttpsRedirection();
+
+// Serve the single-page frontend from wwwroot (index.html at "/").
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -92,5 +97,6 @@ app.MapWorkflowAdminEndpoints();
 app.MapApprovalEndpoints();
 app.MapDashboardEndpoints();
 app.MapLeaveRequestEndpoints();
+app.MapReferenceEndpoints();
 
 app.Run();

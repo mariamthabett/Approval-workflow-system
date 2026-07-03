@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FlowApprove — Approval Workflow</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✅</text></svg>" />
+</head>
+<body>
+    <!-- ============ LOGIN ============ -->
+    <div id="login-view" class="login-screen">
+        <button id="lang-login" class="lang-toggle lang-toggle-fixed" onclick="toggleLang()">🌐 العربية</button>
+        <div class="login-card">
+            <div class="login-brand">
+                <div class="logo-mark">✓</div>
+                <h1>FlowApprove</h1>
+                <p data-i18n="tagline">Approval Workflow System</p>
+            </div>
+
+            <label class="field">
+                <span data-i18n="signInAs">Sign in as</span>
+                <input id="login-email" type="email" placeholder="you@example.com" autocomplete="off" />
+            </label>
+            <button id="login-btn" class="btn btn-primary btn-block" data-i18n="signIn">Sign In</button>
+            <div id="login-error" class="login-error"></div>
+
+            <div class="demo-divider"><span data-i18n="orPickDemo">or pick a demo user</span></div>
+            <div id="demo-users" class="demo-users"></div>
+        </div>
+        <footer class="login-footer" data-i18n="loginFooter">Generic, config-driven approval engine · JWT auth · Leave-request sample module</footer>
+    </div>
+
+    <!-- ============ APP SHELL ============ -->
+    <div id="app-view" class="app-shell hidden">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="logo-mark">✓</div>
+                <span>FlowApprove</span>
+            </div>
+            <nav id="nav" class="nav"></nav>
+            <div class="sidebar-foot">
+                <div id="user-chip" class="user-chip"></div>
+                <button id="lang-app" class="btn btn-outline btn-sm btn-block lang-toggle" onclick="toggleLang()">🌐 العربية</button>
+                <button id="logout-btn" class="btn btn-ghost btn-sm btn-block" data-i18n="signOut" style="margin-top:8px">Sign out</button>
+            </div>
+        </aside>
+
+        <main class="main">
+            <header class="topbar">
+                <div>
+                    <h2 id="page-title">Inbox</h2>
+                    <p id="page-subtitle" class="muted"></p>
+                </div>
+                <div id="topbar-actions" class="topbar-actions"></div>
+            </header>
+            <section id="content" class="content"></section>
+        </main>
+    </div>
+
+    <!-- ============ MODAL + TOASTS ============ -->
+    <div id="modal-root" class="modal-root hidden">
+        <div class="modal-backdrop" data-close></div>
+        <div class="modal-card" role="dialog" aria-modal="true">
+            <header class="modal-head">
+                <h3 id="modal-title">Title</h3>
+                <button class="modal-x" data-close aria-label="Close">×</button>
+            </header>
+            <div id="modal-body" class="modal-body"></div>
+            <footer id="modal-foot" class="modal-foot"></footer>
+        </div>
+    </div>
+
+    <div id="toasts" class="toasts"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

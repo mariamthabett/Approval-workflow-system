@@ -195,3 +195,8 @@ C:\Users\PC\Desktop\Approval workflow system\MyProject\bin\Debug\net10.0\runtime
 C:\Users\PC\Desktop\Approval workflow system\MyProject\bin\Debug\net10.0\runtimes\iossimulator-arm64\native\e_sqlite3.a
 C:\Users\PC\Desktop\Approval workflow system\MyProject\bin\Debug\net10.0\runtimes\iossimulator-x64\native\e_sqlite3.a
 C:\Users\PC\Desktop\Approval workflow system\MyProject\bin\Debug\net10.0\runtimes\iossimulator-x86\native\e_sqlite3.a
+C:\Users\PC\Desktop\Approval workflow system\MyProject\bin\Debug\net10.0\MyProject.staticwebassets.runtime.json
+C:\Users\PC\Desktop\Approval workflow system\MyProject\obj\Debug\net10.0\MyProject.sourcelink.json
+C:\Users\PC\Desktop\Approval workflow system\MyProject\obj\Debug\net10.0\compressed\tsu9hxczlv-{0}-h3ek3ql7qv-h3ek3ql7qv.gz
+C:\Users\PC\Desktop\Approval workflow system\MyProject\obj\Debug\net10.0\compressed\wynzhdlb72-{0}-h9asexhbop-h9asexhbop.gz
+C:\Users\PC\Desktop\Approval workflow system\MyProject\obj\Debug\net10.0\compressed\vd6j8solgv-{0}-0vx41qbbeb-0vx41qbbeb.gz

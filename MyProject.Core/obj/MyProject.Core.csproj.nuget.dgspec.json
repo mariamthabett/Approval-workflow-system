@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "c:\\Users\\PC\\Desktop\\Approval workflow system\\MyProject.Core\\MyProject.Core.csproj": {}
+    "C:\\Users\\PC\\Desktop\\Approval workflow system\\MyProject.Core\\MyProject.Core.csproj": {}
   },
   "projects": {
-    "c:\\Users\\PC\\Desktop\\Approval workflow system\\MyProject.Core\\MyProject.Core.csproj": {
+    "C:\\Users\\PC\\Desktop\\Approval workflow system\\MyProject.Core\\MyProject.Core.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Users\\PC\\Desktop\\Approval workflow system\\MyProject.Core\\MyProject.Core.csproj",
+        "projectUniqueName": "C:\\Users\\PC\\Desktop\\Approval workflow system\\MyProject.Core\\MyProject.Core.csproj",
         "projectName": "MyProject.Core",
-        "projectPath": "c:\\Users\\PC\\Desktop\\Approval workflow system\\MyProject.Core\\MyProject.Core.csproj",
+        "projectPath": "C:\\Users\\PC\\Desktop\\Approval workflow system\\MyProject.Core\\MyProject.Core.csproj",
         "packagesPath": "C:\\Users\\PC\\.nuget\\packages\\",
-        "outputPath": "c:\\Users\\PC\\Desktop\\Approval workflow system\\MyProject.Core\\obj\\",
+        "outputPath": "C:\\Users\\PC\\Desktop\\Approval workflow system\\MyProject.Core\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\PC\\AppData\\Roaming\\NuGet\\NuGet.Config",

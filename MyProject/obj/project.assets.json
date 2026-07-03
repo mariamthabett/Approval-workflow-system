@@ -3591,8 +3591,8 @@
           "framework": "net10.0",
           "targetAlias": "net10.0",
           "projectReferences": {
-            "c:\\Users\\PC\\Desktop\\Approval workflow system\\MyProject.Core\\MyProject.Core.csproj": {
-              "projectPath": "c:\\Users\\PC\\Desktop\\Approval workflow system\\MyProject.Core\\MyProject.Core.csproj"
+            "C:\\Users\\PC\\Desktop\\Approval workflow system\\MyProject.Core\\MyProject.Core.csproj": {
+              "projectPath": "C:\\Users\\PC\\Desktop\\Approval workflow system\\MyProject.Core\\MyProject.Core.csproj"
             }
           }
         }
