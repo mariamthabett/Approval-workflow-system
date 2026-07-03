@@ -197,6 +197,8 @@ C:\Users\PC\Desktop\Approval workflow system\MyProject\bin\Debug\net10.0\runtime
 C:\Users\PC\Desktop\Approval workflow system\MyProject\bin\Debug\net10.0\runtimes\iossimulator-x86\native\e_sqlite3.a
 C:\Users\PC\Desktop\Approval workflow system\MyProject\bin\Debug\net10.0\MyProject.staticwebassets.runtime.json
 C:\Users\PC\Desktop\Approval workflow system\MyProject\obj\Debug\net10.0\MyProject.sourcelink.json
-C:\Users\PC\Desktop\Approval workflow system\MyProject\obj\Debug\net10.0\compressed\tsu9hxczlv-{0}-h3ek3ql7qv-h3ek3ql7qv.gz
-C:\Users\PC\Desktop\Approval workflow system\MyProject\obj\Debug\net10.0\compressed\wynzhdlb72-{0}-h9asexhbop-h9asexhbop.gz
-C:\Users\PC\Desktop\Approval workflow system\MyProject\obj\Debug\net10.0\compressed\vd6j8solgv-{0}-0vx41qbbeb-0vx41qbbeb.gz
+C:\Users\PC\Desktop\Approval workflow system\MyProject\obj\Debug\net10.0\compressed\tsu9hxczlv-{0}-c1y47h7sfo-c1y47h7sfo.gz
+C:\Users\PC\Desktop\Approval workflow system\MyProject\obj\Debug\net10.0\compressed\5hq3tawrhg-{0}-h46p1f3cwr-h46p1f3cwr.gz
+C:\Users\PC\Desktop\Approval workflow system\MyProject\obj\Debug\net10.0\compressed\wynzhdlb72-{0}-ezdzic23kq-ezdzic23kq.gz
+C:\Users\PC\Desktop\Approval workflow system\MyProject\obj\Debug\net10.0\compressed\vd6j8solgv-{0}-kru7e1oy16-kru7e1oy16.gz
+C:\Users\PC\Desktop\Approval workflow system\MyProject\obj\Debug\net10.0\compressed\rcronqf7oo-{0}-yyviwqx1x7-yyviwqx1x7.gz

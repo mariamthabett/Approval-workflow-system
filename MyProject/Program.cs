@@ -36,6 +36,17 @@ builder.Services.AddHostedService<OutboxDispatcher>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
+// CORS: allow a separately-hosted frontend (e.g. on Vercel) to call this API. By default any origin
+// is allowed (auth is via Bearer token, not cookies, so this is safe for a demo). To lock it down,
+// set "Cors:AllowedOrigins" in configuration to a list of exact origins.
+var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+builder.Services.AddCors(options => options.AddPolicy("frontend", policy =>
+{
+    policy.AllowAnyHeader().AllowAnyMethod();
+    if (corsOrigins is { Length: > 0 }) policy.WithOrigins(corsOrigins);
+    else policy.AllowAnyOrigin();
+}));
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -88,6 +99,8 @@ app.UseHttpsRedirection();
 // Serve the single-page frontend from wwwroot (index.html at "/").
 app.UseDefaultFiles();
 app.UseStaticFiles();
+
+app.UseCors("frontend");
 
 app.UseAuthentication();
 app.UseAuthorization();

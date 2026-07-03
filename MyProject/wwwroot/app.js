@@ -13,6 +13,16 @@ const DEMO_USERS = [
 
 const STORE_KEY = 'flowapprove.session';
 const LANG_KEY = 'flowapprove.lang';
+const API_BASE_KEY = 'flowapprove.apiBase';
+
+// Base URL for the API. Empty = same origin (the .NET app serves this page).
+// Precedence: localStorage override (set via ⚙️ button or ?api=) > window.API_BASE (config.js) > "".
+function currentApiBase() {
+    let b = null;
+    try { b = localStorage.getItem(API_BASE_KEY); } catch { /* ignore */ }
+    if (b == null && typeof window !== 'undefined' && typeof window.API_BASE === 'string') b = window.API_BASE;
+    return (b || '').replace(/\/+$/, '');
+}
 
 /* ============================================================
    i18n dictionary
@@ -132,6 +142,13 @@ const I18N = {
         tSessionExpired: 'Your session has expired. Please sign in again.',
         reqFailed: 'Request failed ({n})',
         langButton: '🌐 العربية',
+        backendBtn: '⚙️ Backend URL',
+        backendTitle: 'Backend API URL',
+        backendHelp: 'Enter the URL of your hosted .NET backend, e.g. https://your-app.onrender.com. Leave empty to use the same site that serves this page.',
+        backendPh: 'https://your-backend.onrender.com',
+        backendSaved: 'Backend URL saved',
+        backendCleared: 'Using same-origin backend',
+        errBackendUnreachable: 'Cannot reach the backend. Check the Backend URL (⚙️ below) and that the server is running.',
     },
     ar: {
         tagline: 'نظام سير عمل الموافقات',
@@ -247,6 +264,13 @@ const I18N = {
         tSessionExpired: 'انتهت جلستك. يرجى تسجيل الدخول مجددًا.',
         reqFailed: 'فشل الطلب ({n})',
         langButton: '🌐 English',
+        backendBtn: '⚙️ رابط الخادم',
+        backendTitle: 'رابط خادم الـ API',
+        backendHelp: 'أدخل رابط خادم .NET المستضاف، مثل https://your-app.onrender.com. اتركه فارغًا لاستخدام نفس الموقع الذي يقدّم هذه الصفحة.',
+        backendPh: 'https://your-backend.onrender.com',
+        backendSaved: 'تم حفظ رابط الخادم',
+        backendCleared: 'سيتم استخدام نفس المصدر',
+        errBackendUnreachable: 'تعذّر الوصول إلى الخادم. تحقق من رابط الخادم (⚙️ بالأسفل) وأن الخادم يعمل.',
     },
 };
 
@@ -272,7 +296,7 @@ const loc = () => (S.lang === 'ar' ? 'ar' : 'en-US');
    API helper
    ============================================================ */
 async function api(method, path, body) {
-    const res = await fetch(path, {
+    const res = await fetch(currentApiBase() + path, {
         method,
         headers: {
             'Content-Type': 'application/json',
@@ -418,8 +442,26 @@ async function doLogin(email) {
         localStorage.setItem(STORE_KEY, JSON.stringify({ token: S.token, me: S.me, roles: S.roles, name: S.name, email }));
         await enterApp();
     } catch (err) {
-        el('login-error').textContent = err.status === 401 ? t('errNoEmployee') : err.message;
+        el('login-error').textContent = err.status === 401 ? t('errNoEmployee')
+            : !err.status ? t('errBackendUnreachable')
+            : err.message;
     }
+}
+
+// Backend URL settings (for when the API is hosted separately from this static frontend).
+function openBackendSettings() {
+    openModal(t('backendTitle'), `
+        <p class="muted" style="margin-top:0">${t('backendHelp')}</p>
+        <label class="field"><span>${t('backendTitle')}</span>
+            <input id="m-api" type="url" value="${escapeHtml(currentApiBase())}" placeholder="${t('backendPh')}" /></label>`,
+        `<button class="btn btn-ghost" data-close>${t('cancel')}</button>
+         <button class="btn btn-primary" onclick="submitModal(this)">${t('save')}</button>`,
+        async () => {
+            const v = el('m-api').value.trim().replace(/\/+$/, '');
+            if (v) localStorage.setItem(API_BASE_KEY, v); else localStorage.removeItem(API_BASE_KEY);
+            closeModal();
+            toast(v ? t('backendSaved') : t('backendCleared'), v, 'success');
+        });
 }
 
 function logout() {
@@ -1138,6 +1180,15 @@ el('login-email').addEventListener('keydown', (e) => { if (e.key === 'Enter') el
 el('logout-btn').addEventListener('click', logout);
 
 async function boot() {
+    // One-time backend override via ?api=<url> (empty value clears it).
+    try {
+        const q = new URLSearchParams(location.search).get('api');
+        if (q !== null) {
+            if (q) localStorage.setItem(API_BASE_KEY, q.replace(/\/+$/, ''));
+            else localStorage.removeItem(API_BASE_KEY);
+        }
+    } catch { /* ignore */ }
+
     S.lang = localStorage.getItem(LANG_KEY) || 'en';
     applyLang();
     renderDemoUsers();

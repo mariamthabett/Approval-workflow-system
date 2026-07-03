@@ -123,6 +123,11 @@ textarea { resize: vertical; min-height: 74px; }
 .demo-user-info b { display: block; font-size: 13px; }
 .demo-user-info small { color: var(--muted); font-size: 11.5px; }
 .login-footer { margin-top: 22px; color: var(--muted); font-size: 12px; text-align: center; max-width: 420px; }
+.link-btn {
+    display: block; width: 100%; margin-top: 16px; padding: 8px; background: none; border: none;
+    color: var(--muted); font-size: 12.5px; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm);
+}
+.link-btn:hover { color: var(--primary); background: var(--surface-2); }
 
 .avatar {
     width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
