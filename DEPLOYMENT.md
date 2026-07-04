@@ -2,7 +2,15 @@
 
 **النشر: الواجهة على Vercel + الخادم (.NET) على استضافة تانية.**
 
-The frontend (`MyProject/wwwroot`) is a static site. The backend is an ASP.NET Core app.
+The repo is split into two independent apps:
+
+```
+frontend/      → static SPA        → deploy to Vercel
+MyProject/     → ASP.NET Core API  → deploy to a .NET host (API-only, does not serve the frontend)
+MyProject.Core/
+Dockerfile     → builds the backend container
+```
+
 **Vercel cannot run the .NET backend**, so it goes on a .NET-capable host, and the Vercel page
 is pointed at it. CORS is already enabled on the backend, so cross-origin calls work.
 
@@ -38,7 +46,7 @@ A `Dockerfile` is included at the repo root. It runs on SQLite (schema + demo da
 1. Go to **vercel.com → Add New → Project** and import the same GitHub repo.
 2. In **Configure Project**, set:
    - **Framework Preset:** Other
-   - **Root Directory:** `MyProject/wwwroot`   ← *this is the key setting — it's why nothing showed before*
+   - **Root Directory:** `frontend`   ← *this is the key setting — it's why nothing showed before*
    - **Build Command:** (leave empty)
    - **Output Directory:** (leave empty)
 3. **Deploy.** The login screen should now appear at your `*.vercel.app` URL.
@@ -48,7 +56,7 @@ The screens load, but they need the backend URL to log in / show data. Pick one:
 
 - **Easiest (no redeploy):** on the login screen click **⚙️ Backend URL** and paste your Render URL, then Save.
   (Or open the site once as `https://<your-site>.vercel.app/?api=https://<your-backend>.onrender.com`.)
-- **Permanent:** edit [`MyProject/wwwroot/config.js`](MyProject/wwwroot/config.js):
+- **Permanent:** edit [`frontend/config.js`](frontend/config.js):
   ```js
   window.API_BASE = "https://approval-workflow-xxxx.onrender.com";
   ```
@@ -59,10 +67,15 @@ That's it — log in as `alice@example.com`, create & submit a leave request, th
 
 ---
 
-## Simpler alternative (one deployment, fully working)
-Because the .NET app already serves the frontend from `wwwroot`, you can skip Vercel entirely and
-just deploy the **backend** (Part A). Its URL then shows the screens *and* serves the API from one
-origin — no `API_BASE`, no CORS to think about.
+## Local development (two apps)
+Run the backend and serve the frontend separately:
+
+```bash
+dotnet run --project MyProject                 # API on http://localhost:5294
+npx serve frontend                             # static frontend on its own port
+```
+
+Open the frontend URL, click **⚙️ Backend URL**, and enter `http://localhost:5294`.
 
 ---
 

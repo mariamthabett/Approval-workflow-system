@@ -96,10 +96,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Serve the single-page frontend from wwwroot (index.html at "/").
-app.UseDefaultFiles();
-app.UseStaticFiles();
-
+// API-only backend: the frontend is a separate static app (see /frontend, deployed to Vercel).
 app.UseCors("frontend");
 
 app.UseAuthentication();
