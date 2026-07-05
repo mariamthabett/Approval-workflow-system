@@ -85,7 +85,8 @@ using (var scope = app.Services.CreateScope())
         await db.Database.EnsureCreatedAsync();
     else
         await db.Database.MigrateAsync();
-    await DataSeeder.SeedAsync(db);
+    var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+    await DataSeeder.SeedAsync(db, passwordHasher);
 }
 
 // ---- pipeline ----
@@ -108,5 +109,6 @@ app.MapApprovalEndpoints();
 app.MapDashboardEndpoints();
 app.MapLeaveRequestEndpoints();
 app.MapReferenceEndpoints();
+app.MapActivityEndpoints();
 
 app.Run();

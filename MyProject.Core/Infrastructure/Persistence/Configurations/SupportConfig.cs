@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using MyProject.Core.Domain.Auditing;
 using MyProject.Core.Domain.Documents;
 using MyProject.Core.Domain.Notifications;
 using MyProject.Core.Domain.Outbox;
@@ -39,5 +40,22 @@ public sealed class LeaveRequestConfig : IEntityTypeConfiguration<LeaveRequest>
         b.HasKey(l => l.Id);
         b.Property(l => l.Reason).HasMaxLength(1000).IsRequired();
         b.HasIndex(l => l.OwnerEmployeeId);
+    }
+}
+
+public sealed class ActivityLogConfig : IEntityTypeConfiguration<ActivityLog>
+{
+    public void Configure(EntityTypeBuilder<ActivityLog> b)
+    {
+        b.ToTable("ActivityLogs");
+        b.HasKey(a => a.Id);
+        b.Property(a => a.Type).HasConversion<int>().IsRequired();
+        b.Property(a => a.ActorEmail).HasMaxLength(256);
+        b.Property(a => a.EntityType).HasMaxLength(128);
+        b.Property(a => a.EntityId).HasMaxLength(64);
+        b.Property(a => a.Description).HasMaxLength(1000);
+        b.Property(a => a.IpAddress).HasMaxLength(64);
+        b.HasIndex(a => a.EmployeeId);
+        b.HasIndex(a => a.CreatedAtUtc);
     }
 }

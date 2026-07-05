@@ -19,11 +19,16 @@
             </div>
 
             <label class="field">
-                <span data-i18n="signInAs">Sign in as</span>
-                <input id="login-email" type="email" placeholder="you@example.com" autocomplete="off" />
+                <span data-i18n="emailLabel">Email</span>
+                <input id="login-email" type="email" placeholder="you@example.com" autocomplete="username" />
+            </label>
+            <label class="field">
+                <span data-i18n="passwordLabel">Password</span>
+                <input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password" />
             </label>
             <button id="login-btn" class="btn btn-primary btn-block" data-i18n="signIn">Sign In</button>
             <div id="login-error" class="login-error"></div>
+            <button id="register-link" class="link-btn" data-i18n="createAccount" onclick="openRegister()">Create account</button>
 
             <div class="demo-divider"><span data-i18n="orPickDemo">or pick a demo user</span></div>
             <div id="demo-users" class="demo-users"></div>
@@ -44,7 +49,8 @@
             <div class="sidebar-foot">
                 <div id="user-chip" class="user-chip"></div>
                 <button id="lang-app" class="btn btn-outline btn-sm btn-block lang-toggle" onclick="toggleLang()">🌐 العربية</button>
-                <button id="logout-btn" class="btn btn-ghost btn-sm btn-block" data-i18n="signOut" style="margin-top:8px">Sign out</button>
+                <button id="changepw-btn" class="btn btn-ghost btn-sm btn-block" data-i18n="changePassword" style="margin-top:8px" onclick="openChangePassword()">Change password</button>
+                <button id="logout-btn" class="btn btn-ghost btn-sm btn-block" data-i18n="signOut" style="margin-top:4px">Sign out</button>
             </div>
         </aside>
 

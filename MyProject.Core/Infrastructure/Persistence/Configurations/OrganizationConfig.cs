@@ -40,6 +40,7 @@ public sealed class EmployeeConfig : IEntityTypeConfiguration<Employee>
         b.HasKey(e => e.Id);
         b.Property(e => e.FullName).HasMaxLength(200).IsRequired();
         b.Property(e => e.Email).HasMaxLength(256).IsRequired();
+        b.Property(e => e.PasswordHash).HasMaxLength(256);
         b.HasIndex(e => e.Email).IsUnique();
 
         b.HasOne(e => e.Department).WithMany().HasForeignKey(e => e.DepartmentId)

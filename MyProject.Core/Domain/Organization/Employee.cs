@@ -11,6 +11,9 @@ public sealed class Employee
     public int DepartmentId { get; private set; }
     public bool IsActive { get; private set; } = true;
 
+    /// <summary>PBKDF2 password hash (see <c>IPasswordHasher</c>). Null for accounts without a set password.</summary>
+    public string? PasswordHash { get; private set; }
+
     public Department? Department { get; private set; }
     public IReadOnlyCollection<EmployeeRole> Roles => _roles.AsReadOnly();
 
@@ -28,4 +31,7 @@ public sealed class Employee
         if (_roles.Any(r => r.RoleId == roleId)) return;
         _roles.Add(new EmployeeRole(Id, roleId));
     }
+
+    /// <summary>Stores an already-hashed password. Hashing is the caller's responsibility (see <c>IPasswordHasher</c>).</summary>
+    public void SetPasswordHash(string passwordHash) => PasswordHash = passwordHash;
 }

@@ -1,0 +1,65 @@
+# ---------------------------------------------
+# .NET
+# ---------------------------------------------
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+project.lock.json
+project.assets.json
+*.nuget.props
+*.nuget.targets
+
+# Build / test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+*.coverage
+*.coveragexml
+
+# ---------------------------------------------
+# IDE / editor
+# ---------------------------------------------
+.vs/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln.iml
+.idea/
+
+# ---------------------------------------------
+# SQLite dev database
+# ---------------------------------------------
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# ---------------------------------------------
+# Logs
+# ---------------------------------------------
+*.log
+
+# ---------------------------------------------
+# Node / frontend
+# ---------------------------------------------
+node_modules/
+.next/
+out/
+build/
+dist/
+.env*.local
+*.tsbuildinfo
+.vercel/
+
+# ---------------------------------------------
+# OS
+# ---------------------------------------------
+.DS_Store
+Thumbs.db

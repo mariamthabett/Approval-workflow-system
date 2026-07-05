@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyProject.Core.Application.Abstractions;
 using MyProject.Core.Domain.Approvals;
+using MyProject.Core.Domain.Auditing;
 using MyProject.Core.Domain.Documents;
 using MyProject.Core.Domain.Notifications;
 using MyProject.Core.Domain.Organization;
@@ -27,6 +28,7 @@ public sealed class AppDbContext : DbContext, IAppDbContext
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
+    public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

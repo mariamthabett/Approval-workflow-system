@@ -11,6 +11,10 @@ const DEMO_USERS = [
     { email: 'admin@example.com', name: 'Admin User',      roleKey: 'demo.admin' },
 ];
 
+// Shared password for every seeded demo account (see DataSeeder.DefaultPassword). Lets the
+// one-click demo buttons sign in without typing credentials.
+const DEMO_PASSWORD = 'Password123!';
+
 const STORE_KEY = 'flowapprove.session';
 const LANG_KEY = 'flowapprove.lang';
 const API_BASE_KEY = 'flowapprove.apiBase';
@@ -34,6 +38,24 @@ const I18N = {
         loginFooter: 'Generic, config-driven approval engine · JWT auth · Leave-request sample module',
         signOut: 'Sign out',
         errNoEmployee: 'No active employee with that email.', errEnterEmail: 'Enter an email address.',
+
+        emailLabel: 'Email', passwordLabel: 'Password', createAccount: 'Create account',
+        errEnterPassword: 'Enter your password.', errInvalidCreds: 'Invalid email or password.',
+        registerTitle: 'Create your account', fullNameLabel: 'Full name', departmentLabel: 'Department',
+        phFullName: 'e.g. Sara Ahmed', pwHint: 'At least 8 characters', registerBtn: 'Create account',
+        changePassword: 'Change password', currentPassword: 'Current password', newPassword: 'New password',
+        tRegistered: 'Welcome!', tRegisteredBody: 'Your account has been created.',
+        tRegisterFailed: 'Could not create account', tFillAllFields: 'Please fill in all fields.',
+        tPwTooShort: 'Password must be at least 8 characters.',
+        tPasswordChanged: 'Password changed', tPasswordChangedBody: 'Use your new password next time you sign in.',
+        tCouldNotChangePw: 'Could not change password',
+        'nav.activity': 'Activity', 'sub.activity': 'A log of who did what and when',
+        actScopeMe: 'My activity', actScopeAll: 'All users',
+        noActivityYet: 'No activity yet', noActivityYetSub: 'Actions you take will appear here.', actIp: 'IP',
+        'activity.Login': 'signed in', 'activity.LoginFailed': 'failed sign-in attempt',
+        'activity.Register': 'registered an account', 'activity.PasswordChanged': 'changed password',
+        'activity.AdminCreatedUser': 'created a user', 'activity.DocumentSubmitted': 'submitted a document',
+        'activity.ApprovalDecision': 'made an approval decision',
 
         'demo.alice': 'Employee · initiates leave', 'demo.bob': 'Manager · Engineering',
         'demo.carol': 'Department Head', 'demo.dan': 'HR Officer · final approver',
@@ -156,6 +178,24 @@ const I18N = {
         loginFooter: 'محرك موافقات عام قابل للتهيئة · مصادقة JWT · وحدة طلب إجازة تجريبية',
         signOut: 'تسجيل الخروج',
         errNoEmployee: 'لا يوجد موظف نشط بهذا البريد الإلكتروني.', errEnterEmail: 'أدخل عنوان بريد إلكتروني.',
+
+        emailLabel: 'البريد الإلكتروني', passwordLabel: 'كلمة المرور', createAccount: 'إنشاء حساب',
+        errEnterPassword: 'أدخل كلمة المرور.', errInvalidCreds: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+        registerTitle: 'أنشئ حسابك', fullNameLabel: 'الاسم الكامل', departmentLabel: 'القسم',
+        phFullName: 'مثال: سارة أحمد', pwHint: '٨ أحرف على الأقل', registerBtn: 'إنشاء الحساب',
+        changePassword: 'تغيير كلمة المرور', currentPassword: 'كلمة المرور الحالية', newPassword: 'كلمة المرور الجديدة',
+        tRegistered: 'أهلًا بك!', tRegisteredBody: 'تم إنشاء حسابك.',
+        tRegisterFailed: 'تعذّر إنشاء الحساب', tFillAllFields: 'يرجى ملء جميع الحقول.',
+        tPwTooShort: 'يجب ألا تقل كلمة المرور عن ٨ أحرف.',
+        tPasswordChanged: 'تم تغيير كلمة المرور', tPasswordChangedBody: 'استخدم كلمة المرور الجديدة في تسجيل الدخول القادم.',
+        tCouldNotChangePw: 'تعذّر تغيير كلمة المرور',
+        'nav.activity': 'النشاط', 'sub.activity': 'سجل بمن فعل ماذا ومتى',
+        actScopeMe: 'نشاطي', actScopeAll: 'كل المستخدمين',
+        noActivityYet: 'لا يوجد نشاط بعد', noActivityYetSub: 'ستظهر هنا الإجراءات التي تقوم بها.', actIp: 'IP',
+        'activity.Login': 'سجّل الدخول', 'activity.LoginFailed': 'محاولة دخول فاشلة',
+        'activity.Register': 'أنشأ حسابًا', 'activity.PasswordChanged': 'غيّر كلمة المرور',
+        'activity.AdminCreatedUser': 'أنشأ مستخدمًا', 'activity.DocumentSubmitted': 'أرسل مستندًا',
+        'activity.ApprovalDecision': 'اتخذ قرار موافقة',
 
         'demo.alice': 'موظفة · تبدأ طلبات الإجازة', 'demo.bob': 'مدير · الهندسة',
         'demo.carol': 'رئيس القسم', 'demo.dan': 'موظف موارد بشرية · الموافق النهائي',
@@ -281,7 +321,7 @@ const S = {
     empById: {}, roleById: {}, deptById: {},
     pending: [], actionable: new Set(),
     section: 'inbox', view: 'inbox', detailId: null, detailFrom: 'inbox',
-    wfSelected: null,
+    wfSelected: null, activityScope: 'me',
 };
 
 function t(key, p) {
@@ -432,20 +472,83 @@ function setLang(lang) {
 /* ============================================================
    auth
    ============================================================ */
-async function doLogin(email) {
+async function doLogin(email, password) {
     el('login-error').textContent = '';
     try {
-        const res = await api('POST', '/api/auth/login', { email });
-        S.token = res.token; S.me = res.employeeId; S.roles = res.roles || [];
-        S.email = email;
-        S.name = DEMO_USERS.find((u) => u.email === email)?.name || email.split('@')[0];
-        localStorage.setItem(STORE_KEY, JSON.stringify({ token: S.token, me: S.me, roles: S.roles, name: S.name, email }));
+        const res = await api('POST', '/api/auth/login', { email, password });
+        applySession(res, email);
         await enterApp();
     } catch (err) {
-        el('login-error').textContent = err.status === 401 ? t('errNoEmployee')
+        el('login-error').textContent = err.status === 401 ? t('errInvalidCreds')
             : !err.status ? t('errBackendUnreachable')
             : err.message;
     }
+}
+
+// Persists the authenticated session returned by /login or /register.
+function applySession(res, email) {
+    S.token = res.token; S.me = res.employeeId; S.roles = res.roles || [];
+    S.email = email;
+    S.name = res.fullName || DEMO_USERS.find((u) => u.email === email)?.name || email.split('@')[0];
+    localStorage.setItem(STORE_KEY, JSON.stringify(
+        { token: S.token, me: S.me, roles: S.roles, name: S.name, email: S.email }));
+}
+
+// Self-service sign-up. Loads departments on demand to populate the picker.
+async function openRegister() {
+    let depts = [];
+    try { depts = await api('GET', '/api/auth/departments'); }
+    catch (err) { toast(t('tRegisterFailed'), err.status ? err.message : t('errBackendUnreachable'), 'error'); return; }
+
+    const deptOptions = depts.map((d) => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
+    openModal(t('registerTitle'), `
+        <label class="field"><span>${t('fullNameLabel')} *</span>
+            <input id="r-name" type="text" placeholder="${t('phFullName')}" /></label>
+        <label class="field"><span>${t('emailLabel')} *</span>
+            <input id="r-email" type="email" placeholder="you@example.com" /></label>
+        <label class="field"><span>${t('passwordLabel')} *</span>
+            <input id="r-password" type="password" placeholder="••••••••" />
+            <small class="muted">${t('pwHint')}</small></label>
+        <label class="field"><span>${t('departmentLabel')} *</span>
+            <select id="r-dept">${deptOptions}</select></label>`,
+        `<button class="btn btn-ghost" data-close>${t('cancel')}</button>
+         <button class="btn btn-primary" onclick="submitModal(this)">${t('registerBtn')}</button>`,
+        async () => {
+            const fullName = el('r-name').value.trim();
+            const email = el('r-email').value.trim();
+            const password = el('r-password').value;
+            const departmentId = Number(el('r-dept').value);
+            if (!fullName || !email || !password || !departmentId) {
+                toast(t('tRegisterFailed'), t('tFillAllFields'), 'error'); throw new Error('validation');
+            }
+            if (password.length < 8) { toast(t('tRegisterFailed'), t('tPwTooShort'), 'error'); throw new Error('validation'); }
+            const res = await api('POST', '/api/auth/register', { fullName, email, password, departmentId });
+            applySession(res, email);
+            closeModal();
+            toast(t('tRegistered'), t('tRegisteredBody'), 'success');
+            await enterApp();
+        });
+}
+
+// Change the signed-in user's own password.
+function openChangePassword() {
+    openModal(t('changePassword'), `
+        <label class="field"><span>${t('currentPassword')} *</span>
+            <input id="cp-current" type="password" placeholder="••••••••" autocomplete="current-password" /></label>
+        <label class="field"><span>${t('newPassword')} *</span>
+            <input id="cp-new" type="password" placeholder="••••••••" autocomplete="new-password" />
+            <small class="muted">${t('pwHint')}</small></label>`,
+        `<button class="btn btn-ghost" data-close>${t('cancel')}</button>
+         <button class="btn btn-primary" onclick="submitModal(this)">${t('save')}</button>`,
+        async () => {
+            const currentPassword = el('cp-current').value;
+            const newPassword = el('cp-new').value;
+            if (!currentPassword || !newPassword) { toast(t('tCouldNotChangePw'), t('tFillAllFields'), 'error'); throw new Error('validation'); }
+            if (newPassword.length < 8) { toast(t('tCouldNotChangePw'), t('tPwTooShort'), 'error'); throw new Error('validation'); }
+            await api('POST', '/api/auth/change-password', { currentPassword, newPassword });
+            closeModal();
+            toast(t('tPasswordChanged'), t('tPasswordChangedBody'), 'success');
+        });
 }
 
 // Backend URL settings (for when the API is hosted separately from this static frontend).
@@ -515,6 +618,7 @@ function renderNav() {
         { id: 'inbox', ico: '📥', badge: S.pending.length },
         { id: 'documents', ico: '📄' },
         { id: 'sla', ico: '⏰' },
+        { id: 'activity', ico: '📋' },
     ];
     let html = items.map(navItem).join('');
     if (isAdmin()) {
@@ -546,10 +650,10 @@ function emptyState(ico, title, sub) {
    router
    ============================================================ */
 const VIEWS = {
-    inbox: renderInbox, documents: renderDocuments, sla: renderSla,
+    inbox: renderInbox, documents: renderDocuments, sla: renderSla, activity: renderActivity,
     detail: renderDetail, doctypes: renderDocTypes, workflows: renderWorkflows,
 };
-const NAV_SECTIONS = new Set(['inbox', 'documents', 'sla', 'doctypes', 'workflows']);
+const NAV_SECTIONS = new Set(['inbox', 'documents', 'sla', 'activity', 'doctypes', 'workflows']);
 
 function go(view, opts = {}) {
     if (opts.id !== undefined) S.detailId = opts.id;
@@ -679,6 +783,54 @@ async function renderSla() {
             </div>
             <div class="row-actions"><button class="btn btn-outline btn-sm">${t('view')} <span class="flip-x">→</span></button></div>
         </div>`).join('');
+}
+
+/* ============================================================
+   VIEW: Activity log
+   ============================================================ */
+const ACTIVITY_ICONS = {
+    Login: '🔓', LoginFailed: '🚫', Register: '🆕', PasswordChanged: '🔑',
+    AdminCreatedUser: '👤', DocumentSubmitted: '📤', ApprovalDecision: '⚖️',
+};
+
+function setActivityScope(scope) { S.activityScope = scope; renderActivity(); }
+
+async function renderActivity() {
+    const admin = isAdmin();
+    if (!admin) S.activityScope = 'me';
+
+    let actions = '';
+    if (admin) {
+        actions += `<button class="btn btn-sm ${S.activityScope === 'me' ? 'btn-primary' : 'btn-outline'}" onclick="setActivityScope('me')">${t('actScopeMe')}</button>
+            <button class="btn btn-sm ${S.activityScope === 'all' ? 'btn-primary' : 'btn-outline'}" onclick="setActivityScope('all')">${t('actScopeAll')}</button>`;
+    }
+    actions += `<button class="btn btn-outline btn-sm" onclick="renderActivity()">↻ ${t('refresh')}</button>`;
+    setPage(t('nav.activity'), t('sub.activity'), actions);
+    el('content').innerHTML = loader();
+
+    const path = admin && S.activityScope === 'all' ? '/api/activity' : '/api/activity/me';
+    let rows = [];
+    try { rows = await api('GET', path); }
+    catch (err) { el('content').innerHTML = emptyState('⚠️', t('couldNotLoad'), err.message); return; }
+
+    el('content').innerHTML = rows.length
+        ? `<div class="card"><div class="card-pad">${rows.map(activityRow).join('')}</div></div>`
+        : emptyState('📋', t('noActivityYet'), t('noActivityYetSub'));
+}
+
+function activityRow(a) {
+    const who = a.actorName || a.actorEmail || (a.employeeId ? `#${a.employeeId}` : '—');
+    const target = a.entityType
+        ? ` <span class="tag">${escapeHtml(a.entityType)}${a.entityId ? ' #' + escapeHtml(a.entityId) : ''}</span>` : '';
+    const ip = a.ipAddress ? ` · ${t('actIp')} ${escapeHtml(a.ipAddress)}` : '';
+    return `<div class="feed-item">
+        <div class="feed-ico">${ACTIVITY_ICONS[a.type] || '•'}</div>
+        <div class="feed-body">
+            <div class="t"><b>${escapeHtml(who)}</b> ${escapeHtml(t('activity.' + a.type))}${target}</div>
+            ${a.description ? `<div class="c">${escapeHtml(a.description)}</div>` : ''}
+            <div class="when">${fmtDate(a.createdAtUtc)} · ${fromNow(a.createdAtUtc)}${ip}</div>
+        </div>
+    </div>`;
 }
 
 /* ============================================================
@@ -1164,7 +1316,7 @@ async function moveStage(wfId, idx, dir) {
    ============================================================ */
 function renderDemoUsers() {
     el('demo-users').innerHTML = DEMO_USERS.map((u) => `
-        <button class="demo-user" onclick="doLogin('${u.email}')">
+        <button class="demo-user" onclick="doLogin('${u.email}', DEMO_PASSWORD)">
             ${avatar(u.name)}
             <div class="demo-user-info"><b>${escapeHtml(u.name)}</b><small>${escapeHtml(t(u.roleKey))}</small></div>
             <span class="muted flip-x">→</span>
@@ -1173,10 +1325,13 @@ function renderDemoUsers() {
 
 el('login-btn').addEventListener('click', () => {
     const email = el('login-email').value.trim();
+    const password = el('login-password').value;
     if (!email) { el('login-error').textContent = t('errEnterEmail'); return; }
-    doLogin(email);
+    if (!password) { el('login-error').textContent = t('errEnterPassword'); return; }
+    doLogin(email, password);
 });
-el('login-email').addEventListener('keydown', (e) => { if (e.key === 'Enter') el('login-btn').click(); });
+el('login-email').addEventListener('keydown', (e) => { if (e.key === 'Enter') el('login-password').focus(); });
+el('login-password').addEventListener('keydown', (e) => { if (e.key === 'Enter') el('login-btn').click(); });
 el('logout-btn').addEventListener('click', logout);
 
 async function boot() {

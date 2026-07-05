@@ -67,6 +67,13 @@ That's it — log in as `alice@example.com`, create & submit a leave request, th
 
 ---
 
+### Alternative: the Next.js frontend (`frontend-next/`)
+There's also a Next.js + TypeScript version. To deploy it instead: Vercel → **Root Directory =
+`frontend-next`** → Framework Preset **Next.js** (auto-detected) → add env var
+`NEXT_PUBLIC_API_BASE=https://<your-backend>` → Deploy. See [`frontend-next/README.md`](frontend-next/README.md).
+
+---
+
 ## Local development (two apps)
 Run the backend and serve the frontend separately:
 

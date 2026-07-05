@@ -1,33 +1,56 @@
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using MyProject.Api.Auth;
 using MyProject.Core.Application.Abstractions;
+using MyProject.Core.Application.Auth;
 using MyProject.Core.Infrastructure.Persistence;
 
 namespace MyProject.Api.Endpoints;
 
-/// <summary>Dev login stub: exchanges an employee email for a signed JWT. Replace with real auth / SSO.</summary>
+/// <summary>Password-based authentication: registration, login, password change, and admin provisioning.</summary>
 public static class AuthEndpoints
 {
-    public sealed record LoginRequest(string Email);
-    public sealed record LoginResponse(string Token, int EmployeeId, IReadOnlyCollection<string> Roles);
+    public sealed record AuthResponse(string Token, int EmployeeId, string FullName, IReadOnlyCollection<string> Roles);
 
     public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/auth").WithTags("Auth");
 
-        group.MapPost("/login", async (LoginRequest req, AppDbContext db, IJwtTokenService jwt, CancellationToken ct) =>
+        // ---- self-service sign-up ----
+        group.MapPost("/register", async (
+            RegisterRequest req, HttpContext http, AuthAppService svc, IJwtTokenService jwt, CancellationToken ct) =>
         {
-            var employee = await db.Employees.FirstOrDefaultAsync(e => e.Email == req.Email && e.IsActive, ct);
-            if (employee is null) return Results.Unauthorized();
-
-            var roles = await db.EmployeeRoles
-                .Where(er => er.EmployeeId == employee.Id)
-                .Join(db.Roles, er => er.RoleId, r => r.Id, (er, r) => r.Code)
-                .ToListAsync(ct);
-
-            var token = jwt.CreateToken(employee, roles);
-            return Results.Ok(new LoginResponse(token, employee.Id, roles));
+            var result = await svc.RegisterAsync(req, Ip(http), ct);
+            return Results.Ok(ToResponse(result, jwt));
         }).AllowAnonymous();
+
+        // ---- login ----
+        group.MapPost("/login", async (
+            LoginRequest req, HttpContext http, AuthAppService svc, IJwtTokenService jwt, CancellationToken ct) =>
+        {
+            var result = await svc.LoginAsync(req, Ip(http), ct);
+            return result is null ? Results.Unauthorized() : Results.Ok(ToResponse(result, jwt));
+        }).AllowAnonymous();
+
+        // ---- change own password ----
+        group.MapPost("/change-password", async (
+            ChangePasswordRequest req, HttpContext http, AuthAppService svc, ICurrentUser currentUser, CancellationToken ct) =>
+        {
+            await svc.ChangePasswordAsync(currentUser.EmployeeId, req, Ip(http), ct);
+            return Results.NoContent();
+        }).RequireAuthorization();
+
+        // ---- admin provisions an account ----
+        group.MapPost("/admin/users", async (
+            AdminCreateUserRequest req, HttpContext http, AuthAppService svc, ICurrentUser currentUser, CancellationToken ct) =>
+            Results.Ok(await svc.AdminCreateUserAsync(req, currentUser.EmployeeId, Ip(http), ct)))
+            .RequireAuthorization(Policies.WorkflowAdmin);
+
+        // ---- departments lookup for the sign-up form (pre-auth) ----
+        group.MapGet("/departments", async (AppDbContext db, CancellationToken ct) =>
+            await db.Departments.OrderBy(d => d.Name)
+                .Select(d => new { d.Id, d.Name }).ToListAsync(ct))
+            .AllowAnonymous();
 
         // Diagnostic: shows the authenticated principal exactly as the API sees it.
         group.MapGet("/whoami", (ClaimsPrincipal user) => Results.Ok(new
@@ -38,4 +61,12 @@ public static class AuthEndpoints
             claims = user.Claims.Select(c => new { c.Type, c.Value })
         })).RequireAuthorization();
     }
+
+    private static AuthResponse ToResponse(AuthResult result, IJwtTokenService jwt)
+    {
+        var token = jwt.CreateToken(result.Employee, result.Roles);
+        return new AuthResponse(token, result.Employee.Id, result.Employee.FullName, result.Roles);
+    }
+
+    private static string? Ip(HttpContext http) => http.Connection.RemoteIpAddress?.ToString();
 }

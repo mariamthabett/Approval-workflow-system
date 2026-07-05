@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MyProject.Core.Application.Abstractions;
 using MyProject.Core.Application.Common;
 using MyProject.Core.Domain.Approvals;
+using MyProject.Core.Domain.Enums;
 using MyProject.Core.Domain.Outbox;
 using MyProject.Core.Domain.Workflows;
 
@@ -19,13 +20,16 @@ public sealed class ApprovalAppService
     private readonly IClock _clock;
     private readonly ICurrentUser _currentUser;
     private readonly IApproverResolver _resolver;
+    private readonly IActivityLogger _activity;
 
-    public ApprovalAppService(IAppDbContext db, IClock clock, ICurrentUser currentUser, IApproverResolver resolver)
+    public ApprovalAppService(
+        IAppDbContext db, IClock clock, ICurrentUser currentUser, IApproverResolver resolver, IActivityLogger activity)
     {
         _db = db;
         _clock = clock;
         _currentUser = currentUser;
         _resolver = resolver;
+        _activity = activity;
     }
 
     public async Task<ApprovalInstanceDto> SubmitAsync(SubmitApprovalRequest req, CancellationToken ct)
@@ -52,6 +56,9 @@ public sealed class ApprovalAppService
             await _db.SaveChangesAsync(token);
         }, ct);
 
+        await _activity.LogAsync(ActivityType.DocumentSubmitted, initiator, actorEmail: null,
+            $"Submitted {docType.Code} #{req.DocumentId} for approval",
+            entityType: docType.Code, entityId: instance.Id.ToString(), cancellationToken: ct);
         return instance.ToDto();
     }
 
@@ -67,6 +74,11 @@ public sealed class ApprovalAppService
             reason: null);
 
         await _db.SaveChangesAsync(ct);
+        await _activity.LogAsync(ActivityType.ApprovalDecision, _currentUser.EmployeeId, actorEmail: null,
+            outcome == ApprovalOutcome.Completed
+                ? $"Approved {docType.Code} #{instance.DocumentId} (final approval)"
+                : $"Approved {docType.Code} #{instance.DocumentId} (stage advanced)",
+            entityType: docType.Code, entityId: instance.Id.ToString(), cancellationToken: ct);
         return instance.ToDto();
     }
 
@@ -80,6 +92,9 @@ public sealed class ApprovalAppService
         Enqueue(instance, docType, ApprovalEventTypes.Rejected, reason: req.Comment);
 
         await _db.SaveChangesAsync(ct);
+        await _activity.LogAsync(ActivityType.ApprovalDecision, _currentUser.EmployeeId, actorEmail: null,
+            $"Rejected {docType.Code} #{instance.DocumentId}",
+            entityType: docType.Code, entityId: instance.Id.ToString(), cancellationToken: ct);
         return instance.ToDto();
     }
 

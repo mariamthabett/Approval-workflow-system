@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyProject.Core.Domain.Approvals;
+using MyProject.Core.Domain.Auditing;
 using MyProject.Core.Domain.Documents;
 using MyProject.Core.Domain.Notifications;
 using MyProject.Core.Domain.Organization;
@@ -27,6 +28,7 @@ public interface IAppDbContext
     DbSet<OutboxMessage> OutboxMessages { get; }
     DbSet<Notification> Notifications { get; }
     DbSet<LeaveRequest> LeaveRequests { get; }
+    DbSet<ActivityLog> ActivityLogs { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 

@@ -45,3 +45,15 @@ public enum LeaveStatus
     Rejected = 4,
     Cancelled = 5
 }
+
+/// <summary>The kind of user activity recorded in the append-only activity log.</summary>
+public enum ActivityType
+{
+    Login = 1,
+    LoginFailed = 2,
+    Register = 3,
+    PasswordChanged = 4,
+    AdminCreatedUser = 5,
+    DocumentSubmitted = 6,
+    ApprovalDecision = 7
+}
