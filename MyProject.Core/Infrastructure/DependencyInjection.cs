@@ -39,6 +39,7 @@ public static class DependencyInjection
         // Outbox subscribers — add a new IIntegrationEventHandler per module; the engine is untouched.
         services.AddScoped<IIntegrationEventHandler, NotificationIntegrationHandler>();
         services.AddScoped<IIntegrationEventHandler, LeaveRequestLockHandler>();
+        services.AddScoped<IIntegrationEventHandler, InvoiceLockHandler>();
 
         return services;
     }

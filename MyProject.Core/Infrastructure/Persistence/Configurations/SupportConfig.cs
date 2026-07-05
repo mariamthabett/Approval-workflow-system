@@ -43,6 +43,20 @@ public sealed class LeaveRequestConfig : IEntityTypeConfiguration<LeaveRequest>
     }
 }
 
+public sealed class InvoiceConfig : IEntityTypeConfiguration<Invoice>
+{
+    public void Configure(EntityTypeBuilder<Invoice> b)
+    {
+        b.ToTable("Invoices");
+        b.HasKey(i => i.Id);
+        b.Property(i => i.Amount).HasPrecision(18, 2);
+        b.Property(i => i.Currency).HasMaxLength(8).IsRequired();
+        b.Property(i => i.Vendor).HasMaxLength(200).IsRequired();
+        b.Property(i => i.Description).HasMaxLength(1000);
+        b.HasIndex(i => i.OwnerEmployeeId);
+    }
+}
+
 public sealed class ActivityLogConfig : IEntityTypeConfiguration<ActivityLog>
 {
     public void Configure(EntityTypeBuilder<ActivityLog> b)

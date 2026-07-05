@@ -117,6 +117,20 @@ const I18N = {
 
         fromDate: 'From date *', toDate: 'To date *', reasonStar: 'Reason *', phVacation: 'e.g. Family vacation',
         createDraft: 'Create draft', editLeaveTitle: 'Edit Leave Request #{id}',
+
+        newInvoice: 'New Invoice', invoiceTitle: 'New Invoice',
+        amountStar: 'Amount *', currencyStar: 'Currency *', vendorStar: 'Vendor / Payee *',
+        invDescription: 'Description', invoiceDateStar: 'Invoice date *', dueDateStar: 'Due date *',
+        phVendor: 'e.g. ACME Supplies', phInvDesc: 'What is this invoice for?', createSubmitInvoice: 'Create & submit',
+        invoiceDetails: 'Invoice details', lAmount: 'Amount', lVendor: 'Vendor', lDescription: 'Description',
+        lInvoiceDate: 'Invoice date', lDueDate: 'Due date',
+        printLabel: 'Print', invoicePrintTitle: 'INVOICE', invoiceNoLabel: 'Invoice No.',
+        lStatus: 'Status', printedOn: 'Printed on {when}', printBrandTag: 'Approval Workflow System',
+        tInvoiceSubmitted: 'Invoice submitted', tInvoiceSubmittedBody: 'Invoice #{id} entered the approval workflow.',
+        tCouldNotSubmitInvoice: 'Could not submit invoice',
+        tInvMissingFields: 'Amount and vendor are required.',
+        tInvInvalidAmount: 'Amount must be greater than zero.',
+        tInvInvalidDates: 'Due date cannot be before the invoice date.',
         codeStar: 'Code *', codeHint: '(stable identifier, e.g. PurchaseOrder)', displayName: 'Display name *',
         documentTypeStar: 'Document type *', workflowNameStar: 'Workflow name *',
         wfHint: "You'll add approval stages after creating it. New workflows start as a draft.",
@@ -257,6 +271,20 @@ const I18N = {
 
         fromDate: 'تاريخ البداية *', toDate: 'تاريخ النهاية *', reasonStar: 'السبب *', phVacation: 'مثال: إجازة عائلية',
         createDraft: 'إنشاء مسودة', editLeaveTitle: 'تعديل طلب الإجازة رقم {id}',
+
+        newInvoice: 'فاتورة جديدة', invoiceTitle: 'فاتورة جديدة',
+        amountStar: 'المبلغ *', currencyStar: 'العملة *', vendorStar: 'الجهة / المستفيد *',
+        invDescription: 'الوصف', invoiceDateStar: 'تاريخ الفاتورة *', dueDateStar: 'تاريخ الاستحقاق *',
+        phVendor: 'مثال: شركة التوريدات', phInvDesc: 'الفاتورة عن ماذا؟', createSubmitInvoice: 'إنشاء وإرسال',
+        invoiceDetails: 'تفاصيل الفاتورة', lAmount: 'المبلغ', lVendor: 'الجهة', lDescription: 'الوصف',
+        lInvoiceDate: 'تاريخ الفاتورة', lDueDate: 'تاريخ الاستحقاق',
+        printLabel: 'طباعة', invoicePrintTitle: 'فاتورة', invoiceNoLabel: 'رقم الفاتورة',
+        lStatus: 'الحالة', printedOn: 'طُبعت في {when}', printBrandTag: 'نظام مسار الموافقات',
+        tInvoiceSubmitted: 'تم إرسال الفاتورة', tInvoiceSubmittedBody: 'دخلت الفاتورة رقم {id} مسار الموافقة.',
+        tCouldNotSubmitInvoice: 'تعذّر إرسال الفاتورة',
+        tInvMissingFields: 'المبلغ والجهة مطلوبان.',
+        tInvInvalidAmount: 'يجب أن يكون المبلغ أكبر من صفر.',
+        tInvInvalidDates: 'لا يمكن أن يكون تاريخ الاستحقاق قبل تاريخ الفاتورة.',
         codeStar: 'الرمز *', codeHint: '(معرّف ثابت، مثل PurchaseOrder)', displayName: 'الاسم المعروض *',
         documentTypeStar: 'نوع المستند *', workflowNameStar: 'اسم مسار العمل *',
         wfHint: 'ستضيف مراحل الموافقة بعد إنشائه. تبدأ مسارات العمل الجديدة كمسودة.',
@@ -707,7 +735,9 @@ function getDraftIds() { try { return JSON.parse(localStorage.getItem(draftKey()
 function saveDraftIds(ids) { localStorage.setItem(draftKey(), JSON.stringify([...new Set(ids)])); }
 
 async function renderDocuments() {
-    setPage(t('nav.documents'), t('sub.documents'), `<button class="btn btn-primary btn-sm" onclick="openCreateLeave()">＋ ${t('newLeave')}</button>`);
+    setPage(t('nav.documents'), t('sub.documents'),
+        `<button class="btn btn-outline btn-sm" onclick="openCreateInvoice()">＋ ${t('newInvoice')}</button>
+         <button class="btn btn-primary btn-sm" onclick="openCreateLeave()">＋ ${t('newLeave')}</button>`);
     el('content').innerHTML = loader();
 
     const draftIds = getDraftIds();
@@ -858,10 +888,18 @@ async function renderDetail() {
     const canAct = S.actionable.has(inst.id);
     const stages = [...inst.stages].sort((a, b) => a.stageOrder - b.stageOrder);
 
+    // Document-specific details for invoices, so an approver sees what they're approving.
+    let docCard = '';
+    if (inst.documentTypeCode === 'Invoice') {
+        try { docCard = invoiceCard(await api('GET', `/api/invoices/${inst.documentId}`)); }
+        catch { /* non-fatal — the approval flow still renders */ }
+    }
+
     el('content').innerHTML = `
         <button class="back-link" onclick="go('${S.detailFrom}')"><span class="flip-x">←</span> ${t('backTo', { x: t('nav.' + S.detailFrom) })}</button>
         <div class="detail-grid">
             <div>
+                ${docCard}
                 <div class="card">
                     <div class="card-head"><h3>${t('approvalProgress')}</h3>${statusPill(inst.status)}</div>
                     <div class="card-pad"><div class="timeline">${stages.map((s) => stageTimelineItem(s, inst)).join('')}</div></div>
@@ -1055,6 +1093,152 @@ async function submitLeave(id) {
         toast(t('tSubmitted'), t('tSubmittedBody', { id }), 'success');
         await refreshPending(); renderDocuments();
     } catch (err) { toast(t('tCouldNotSubmit'), err.message, 'error'); }
+}
+
+/* ============================================================
+   invoice create + submit
+   ============================================================ */
+const INVOICE_CURRENCIES = ['EGP', 'USD', 'EUR', 'SAR', 'AED'];
+
+function fmtMoney(amount, currency) {
+    const n = Number(amount);
+    const s = Number.isFinite(n) ? n.toLocaleString(loc(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : amount;
+    return `${escapeHtml(String(currency || ''))} ${s}`;
+}
+
+function invoiceForm() {
+    const today = new Date().toISOString().slice(0, 10);
+    const currencyOpts = INVOICE_CURRENCIES.map((c) => `<option value="${c}">${c}</option>`).join('');
+    return `
+        <div class="field-row">
+            <label class="field"><span>${t('amountStar')}</span><input id="m-amount" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+            <label class="field"><span>${t('currencyStar')}</span><select id="m-currency">${currencyOpts}</select></label>
+        </div>
+        <label class="field"><span>${t('vendorStar')}</span><input id="m-vendor" type="text" placeholder="${t('phVendor')}" /></label>
+        <label class="field"><span>${t('invDescription')}</span><textarea id="m-desc" placeholder="${t('phInvDesc')}"></textarea></label>
+        <div class="field-row">
+            <label class="field"><span>${t('invoiceDateStar')}</span><input id="m-invdate" type="date" value="${today}" /></label>
+            <label class="field"><span>${t('dueDateStar')}</span><input id="m-duedate" type="date" value="${today}" /></label>
+        </div>`;
+}
+
+function readInvoiceForm() {
+    const amount = parseFloat(el('m-amount').value);
+    const currency = el('m-currency').value;
+    const vendor = el('m-vendor').value.trim();
+    const description = el('m-desc').value.trim() || null;
+    const invoiceDate = el('m-invdate').value, dueDate = el('m-duedate').value;
+    if (!vendor || !el('m-amount').value || !invoiceDate || !dueDate) { toast(t('tWentWrong'), t('tInvMissingFields'), 'error'); return null; }
+    if (!(amount > 0)) { toast(t('tWentWrong'), t('tInvInvalidAmount'), 'error'); return null; }
+    if (dueDate < invoiceDate) { toast(t('tInvalidDates'), t('tInvInvalidDates'), 'error'); return null; }
+    return { amount, currency, vendor, description, invoiceDate, dueDate };
+}
+
+// One step: create the invoice draft, then submit it into the approval engine.
+function openCreateInvoice() {
+    openModal(t('invoiceTitle'), invoiceForm(),
+        `<button class="btn btn-ghost" data-close>${t('cancel')}</button>
+         <button class="btn btn-primary" onclick="submitModal(this)">${t('createSubmitInvoice')}</button>`,
+        async () => {
+            const body = readInvoiceForm(); if (!body) throw new Error('validation');
+            const created = await api('POST', '/api/invoices', body);
+            await api('POST', `/api/invoices/${created.id}/submit`);
+            closeModal();
+            toast(t('tInvoiceSubmitted'), t('tInvoiceSubmittedBody', { id: created.id }), 'success');
+            await refreshPending(); renderDocuments();
+        });
+}
+
+// Holds the invoice currently rendered in the detail view, so printInvoice() can format it
+// without a second fetch (and stays synchronous, avoiding pop-up blockers on the print window).
+let _printableInvoice = null;
+
+function invoiceCard(inv) {
+    _printableInvoice = inv;
+    return `<div class="card card-pad">
+        <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <span>${t('invoiceDetails')}</span>
+            <button class="btn btn-outline btn-sm" onclick="printInvoice()">🖨 ${t('printLabel')}</button>
+        </div>
+        <div class="kv"><span class="k">${t('lAmount')}</span><span class="v"><b>${fmtMoney(inv.amount, inv.currency)}</b></span></div>
+        <div class="kv"><span class="k">${t('lVendor')}</span><span class="v">${escapeHtml(inv.vendor)}</span></div>
+        ${inv.description ? `<div class="kv"><span class="k">${t('lDescription')}</span><span class="v">${escapeHtml(inv.description)}</span></div>` : ''}
+        <div class="kv"><span class="k">${t('lInvoiceDate')}</span><span class="v">${fmtDay(inv.invoiceDate)}</span></div>
+        <div class="kv"><span class="k">${t('lDueDate')}</span><span class="v">${fmtDay(inv.dueDate)}</span></div>
+    </div>`;
+}
+
+// Opens a clean, print-ready invoice document in a new window and triggers the browser print dialog.
+// Fully self-contained (inline styles, no network), RTL-aware, so it works for both languages.
+function printInvoice() {
+    const inv = _printableInvoice;
+    if (!inv) return;
+    const rtl = S.lang === 'ar';
+    const now = new Date().toLocaleDateString(loc(), { year: 'numeric', month: 'long', day: 'numeric' });
+    const row = (k, v) => `<tr><td class="k">${k}</td><td class="v">${v}</td></tr>`;
+    const doc = `<!doctype html>
+<html lang="${S.lang}" dir="${rtl ? 'rtl' : 'ltr'}">
+<head>
+<meta charset="utf-8" />
+<title>${t('invoicePrintTitle')} #${inv.id}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, Arial, sans-serif; color: #1f2733; background: #f4f5f7; padding: 32px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sheet { max-width: 720px; margin: 0 auto; background: #fff; border: 1px solid #e6e8ec; border-radius: 14px; padding: 40px; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; border-bottom: 2px solid #eef0f3; padding-bottom: 24px; margin-bottom: 28px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .mark { width: 44px; height: 44px; border-radius: 12px; background: #5b5bf0; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; }
+  .bname { font-size: 19px; font-weight: 700; }
+  .btag { font-size: 12px; color: #7a828e; margin-top: 2px; }
+  .doc { text-align: end; }
+  .doctitle { font-size: 26px; font-weight: 800; letter-spacing: 2px; color: #5b5bf0; }
+  .docno { font-size: 13px; color: #4a5361; margin-top: 4px; }
+  .status { display: inline-block; margin-top: 8px; font-size: 12px; font-weight: 600; padding: 3px 12px; border-radius: 999px; background: #eef0ff; color: #4646c8; }
+  .amount { background: #f7f8fb; border: 1px solid #edeff3; border-radius: 12px; padding: 22px 24px; margin-bottom: 26px; }
+  .amount-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #7a828e; }
+  .amount-value { font-size: 32px; font-weight: 800; margin-top: 6px; }
+  .meta { width: 100%; border-collapse: collapse; }
+  .meta td { padding: 13px 4px; border-bottom: 1px solid #eef0f3; vertical-align: top; font-size: 14px; }
+  .meta td.k { color: #7a828e; width: 38%; font-weight: 600; }
+  .meta td.v { text-align: end; }
+  .foot { margin-top: 30px; padding-top: 18px; border-top: 1px solid #eef0f3; font-size: 12px; color: #9aa1ab; text-align: center; }
+  @media print { body { background: #fff; padding: 0; } .sheet { border: none; border-radius: 0; max-width: none; padding: 8px; } }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <header class="head">
+      <div class="brand">
+        <span class="mark">✓</span>
+        <div><div class="bname">FlowApprove</div><div class="btag">${escapeHtml(t('printBrandTag'))}</div></div>
+      </div>
+      <div class="doc">
+        <div class="doctitle">${t('invoicePrintTitle')}</div>
+        <div class="docno">${t('invoiceNoLabel')} #${inv.id}</div>
+        <span class="status">${escapeHtml(tStatus(inv.status))}</span>
+      </div>
+    </header>
+    <div class="amount">
+      <div class="amount-label">${t('lAmount')}</div>
+      <div class="amount-value">${fmtMoney(inv.amount, inv.currency)}</div>
+    </div>
+    <table class="meta">
+      ${row(t('lVendor'), escapeHtml(inv.vendor))}
+      ${inv.description ? row(t('lDescription'), escapeHtml(inv.description)) : ''}
+      ${row(t('lInvoiceDate'), fmtDay(inv.invoiceDate))}
+      ${row(t('lDueDate'), fmtDay(inv.dueDate))}
+      ${row(t('lStatus'), escapeHtml(tStatus(inv.status)))}
+    </table>
+    <footer class="foot">${escapeHtml(t('printedOn', { when: now }))}</footer>
+  </div>
+  <script>window.addEventListener('load', function () { window.focus(); window.print(); });<\/script>
+</body>
+</html>`;
+    const w = window.open('', '_blank', 'width=820,height=1000');
+    if (!w) { toast(t('tWentWrong'), t('printLabel'), 'error'); return; }
+    w.document.open();
+    w.document.write(doc);
+    w.document.close();
 }
 
 /* ============================================================

@@ -108,6 +108,7 @@ app.MapWorkflowAdminEndpoints();
 app.MapApprovalEndpoints();
 app.MapDashboardEndpoints();
 app.MapLeaveRequestEndpoints();
+app.MapInvoiceEndpoints();
 app.MapReferenceEndpoints();
 app.MapActivityEndpoints();
 

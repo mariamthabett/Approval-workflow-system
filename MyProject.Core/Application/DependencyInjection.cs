@@ -19,6 +19,7 @@ public static class DependencyInjection
         services.AddScoped<ApprovalAppService>();
         services.AddScoped<DashboardQueryService>();
         services.AddScoped<LeaveRequestService>();
+        services.AddScoped<InvoiceService>();
         return services;
     }
 }

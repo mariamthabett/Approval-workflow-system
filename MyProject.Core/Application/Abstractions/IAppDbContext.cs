@@ -28,6 +28,7 @@ public interface IAppDbContext
     DbSet<OutboxMessage> OutboxMessages { get; }
     DbSet<Notification> Notifications { get; }
     DbSet<LeaveRequest> LeaveRequests { get; }
+    DbSet<Invoice> Invoices { get; }
     DbSet<ActivityLog> ActivityLogs { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

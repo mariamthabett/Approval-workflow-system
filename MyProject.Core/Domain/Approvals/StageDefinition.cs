@@ -31,7 +31,6 @@ public sealed record StageDefinition(
 
 /// <summary>Result of an approve action: whether the flow advanced to a next stage or completed.</summary>
 public enum ApprovalOutcome
-{
-    Advanced = 1,
+{     Advanced = 1,
     Completed = 2
 }

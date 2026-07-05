@@ -46,6 +46,16 @@ public enum LeaveStatus
     Cancelled = 5
 }
 
+/// <summary>Display/lock status of the sample Invoice document.</summary>
+public enum InvoiceStatus
+{
+    Draft = 1,
+    Submitted = 2,
+    Approved = 3,
+    Rejected = 4,
+    Cancelled = 5
+}
+
 /// <summary>The kind of user activity recorded in the append-only activity log.</summary>
 public enum ActivityType
 {

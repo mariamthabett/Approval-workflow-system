@@ -7,9 +7,9 @@ using MyProject.Core.Domain.Workflows;
 namespace MyProject.Core.Infrastructure.Persistence;
 
 /// <summary>
-/// Seeds a demoable dataset: five roles, two departments, five employees, and an active 3-stage
-/// LeaveRequest workflow that exercises all three approver types (Department → Role → User).
-/// Idempotent: does nothing if employees already exist.
+/// Seeds a demoable dataset: five roles, two departments, five employees, and active 3-stage
+/// LeaveRequest and Invoice workflows that exercise all three approver types (Department → Role → User).
+/// Each block is independently idempotent, so it is safe to run on every startup.
 /// </summary>
 public static class DataSeeder
 {
@@ -17,6 +17,13 @@ public static class DataSeeder
     public const string DefaultPassword = "Password123!";
 
     public static async Task SeedAsync(AppDbContext db, IPasswordHasher passwordHasher, CancellationToken ct = default)
+    {
+        await SeedCoreAsync(db, passwordHasher, ct);
+        await SeedInvoiceWorkflowAsync(db, ct);
+    }
+
+    /// <summary>Roles, departments, employees, and the LeaveRequest workflow. Skipped once employees exist.</summary>
+    private static async Task SeedCoreAsync(AppDbContext db, IPasswordHasher passwordHasher, CancellationToken ct)
     {
         if (await db.Employees.AnyAsync(ct)) return;
 
@@ -60,6 +67,36 @@ public static class DataSeeder
         var workflow = new Workflow(docType.Id, "Standard Leave Approval", admin.Id, now);
         workflow.AddStage("Manager Approval", ApproverAssignment.ForDepartment(engineering.Id), slaHours: 48);
         workflow.AddStage("Department Head", ApproverAssignment.ForRole(rDeptHead.Id), slaHours: 48);
+        workflow.AddStage("HR Approval", ApproverAssignment.ForUser(dan.Id), slaHours: 72);
+        db.Workflows.Add(workflow);
+        await db.SaveChangesAsync(ct);
+
+        workflow.Activate();
+        await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// Registers the "Invoice" document type and an active Manager → Department Head → HR approval workflow.
+    /// Independently idempotent (keyed on the document type) and reuses the core-seeded org, so it runs even
+    /// on an already-populated database.
+    /// </summary>
+    private static async Task SeedInvoiceWorkflowAsync(AppDbContext db, CancellationToken ct)
+    {
+        if (await db.DocumentTypes.AnyAsync(d => d.Code == Invoice.DocumentTypeCode, ct)) return;
+
+        var engineering = await db.Departments.FirstOrDefaultAsync(d => d.Name == "Engineering", ct);
+        var deptHead = await db.Roles.FirstOrDefaultAsync(r => r.Code == "DeptHead", ct);
+        var dan = await db.Employees.FirstOrDefaultAsync(e => e.Email == "dan@example.com", ct);
+        var admin = await db.Employees.FirstOrDefaultAsync(e => e.Email == "admin@example.com", ct);
+        if (engineering is null || deptHead is null || dan is null || admin is null) return;
+
+        var docType = new DocumentType(Invoice.DocumentTypeCode, "Invoice");
+        db.DocumentTypes.Add(docType);
+        await db.SaveChangesAsync(ct);
+
+        var workflow = new Workflow(docType.Id, "Standard Invoice Approval", admin.Id, DateTime.UtcNow);
+        workflow.AddStage("Manager Approval", ApproverAssignment.ForDepartment(engineering.Id), slaHours: 48);
+        workflow.AddStage("Department Head", ApproverAssignment.ForRole(deptHead.Id), slaHours: 48);
         workflow.AddStage("HR Approval", ApproverAssignment.ForUser(dan.Id), slaHours: 72);
         db.Workflows.Add(workflow);
         await db.SaveChangesAsync(ct);
